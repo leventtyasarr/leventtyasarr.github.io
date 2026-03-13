@@ -1,0 +1,2505 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Renk Dedektifi / Color Detective</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&subset=latin-ext&display=swap" rel="stylesheet">
+<style>
+:root {
+  --primary: #FFD93D;
+  --secondary: #FF6B6B;
+  --accent: #6BCB77;
+  --blue: #4ECDC4;
+  --purple: #A855F7;
+  --bg-dark: #1a1a2e;
+}
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
+body { font-family:'Nunito',sans-serif; background:var(--bg-dark); color:#fff; min-height:100vh; overflow-x:hidden; }
+
+.screen { display:none; min-height:100vh; width:100%; position:relative; overflow:hidden; }
+.screen.active { display:flex; flex-direction:column; }
+.screen.active { display:flex; flex-direction:column; align-items:center; justify-content:center; }
+
+/* BLOBS */
+.blob { position:absolute; border-radius:50%; filter:blur(60px); opacity:0.22; pointer-events:none; animation:blobF 8s ease-in-out infinite; }
+.blob1 { width:400px;height:400px;background:#FF6B6B;top:-100px;left:-100px; }
+.blob2 { width:350px;height:350px;background:#4ECDC4;bottom:-80px;right:-80px;animation-delay:3s; }
+.blob3 { width:250px;height:250px;background:#FFD93D;top:40%;left:50%;animation-delay:1.5s; }
+@keyframes blobF { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(20px,-20px) scale(1.05)} }
+
+/* LANG SCREEN */
+#langScreen { background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460); }
+.lang-logo { font-family:'Nunito', sans-serif; font-size:clamp(2rem,7vw,4rem); text-align:center; line-height:1.1; }
+.lang-sub { font-size:0.9rem; opacity:0.6; text-align:center; margin:8px 0 40px; letter-spacing:.1em; }
+.lang-btns { display:flex; gap:24px; justify-content:center; align-items:center; }
+.lang-btn { background:rgba(255,255,255,0.1); border:3px solid rgba(255,255,255,0.2); border-radius:20px; padding:20px 32px; cursor:pointer; transition:all .3s; text-align:center; backdrop-filter:blur(10px); }
+.lang-btn:hover,.lang-btn:active { background:rgba(255,255,255,0.2); border-color:var(--primary); transform:scale(1.05); box-shadow:0 0 30px rgba(255,217,61,0.4); }
+.lang-btn .flag { font-size:3rem; display:block; margin-bottom:8px; }
+.lang-btn .lname { font-family:'Nunito', sans-serif; font-size:1.2rem; }
+
+/* STYLE SCREEN */
+#styleScreen { background:linear-gradient(135deg,#0f3460,#16213e,#1a1a2e); padding:20px; }
+.style-title { font-family:'Nunito', sans-serif; font-size:clamp(1.6rem,5vw,2.5rem); text-align:center; color:var(--primary); text-shadow:0 0 30px rgba(255,217,61,0.5); margin-bottom:6px; }
+.style-sub { font-size:0.9rem; opacity:0.7; text-align:center; margin-bottom:24px; }
+.style-grid { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; max-width:600px; margin-bottom:24px; }
+.style-card { width:100px; height:110px; border-radius:16px; cursor:pointer; border:3px solid rgba(255,255,255,0.2); overflow:hidden; transition:all .3s; background:rgba(255,255,255,0.05); }
+.style-card:hover { transform:scale(1.05); border-color:var(--primary); }
+.style-card.selected { border-color:var(--primary); box-shadow:0 0 20px rgba(255,217,61,0.6); transform:scale(1.08); }
+.style-preview { width:100%; height:75px; display:flex; align-items:center; justify-content:center; font-size:2.2rem; }
+.preview-cartoon { background:linear-gradient(135deg,#87CEEB,#98FB98,#FFD700,#FF6B6B); }
+.preview-squishy { background:linear-gradient(135deg,#FFB3C6,#FF6B9D,#C9B8E8,#87CEEB); }
+.preview-watercolor { background:linear-gradient(135deg,#E8F4FD,#BFDBFE,#FDE68A,#BBF7D0); }
+.preview-pixel { background:repeating-linear-gradient(0deg,transparent,transparent 8px,rgba(0,0,0,.1) 8px,rgba(0,0,0,.1) 9px),repeating-linear-gradient(90deg,transparent,transparent 8px,rgba(0,0,0,.1) 8px,rgba(0,0,0,.1) 9px),linear-gradient(135deg,#7C3AED,#2563EB,#059669); }
+.preview-paper { background:linear-gradient(135deg,#FEF3C7,#FDE68A,#D1FAE5,#DBEAFE); }
+.style-label { font-family:'Nunito', sans-serif; font-size:0.6rem; text-align:center; padding:4px 4px 6px; line-height:1.2; text-transform:uppercase; letter-spacing:.03em; }
+
+.confirm-btn { background:linear-gradient(135deg,var(--primary),#FFB800); border:none; border-radius:50px; padding:16px 48px; font-family:'Nunito', sans-serif; font-size:1.2rem; color:#1a1a2e; cursor:pointer; box-shadow:0 4px 20px rgba(255,217,61,0.4); transition:all .2s; }
+.confirm-btn:hover { transform:scale(1.05); }
+.confirm-btn:active { transform:scale(0.97); }
+
+/* MENU */
+#menuScreen { padding:20px; }
+.menu-bg { position:absolute; inset:0; background:linear-gradient(135deg,#1a1a2e,#0f3460,#16213e); }
+.menu-content { position:relative; z-index:1; text-align:center; width:100%; max-width:400px; }
+.menu-logo { font-family:'Nunito', sans-serif; font-size:clamp(1.8rem,6vw,3rem); line-height:1.1; margin-bottom:6px; }
+.logo-icon { font-size:1.2em; display:block; animation:spin 3s linear infinite; }
+@keyframes spin { 0%{transform:rotate(0)} 100%{transform:rotate(360deg)} }
+.level-progress { background:rgba(255,255,255,0.1); border-radius:16px; padding:16px 20px; margin:20px 0; backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,0.15); }
+.level-text { font-size:0.85rem; opacity:0.8; margin-bottom:8px; }
+.progress-bar-wrap { background:rgba(0,0,0,0.3); border-radius:10px; height:12px; overflow:hidden; }
+.progress-bar-fill { height:100%; border-radius:10px; background:linear-gradient(90deg,#6BCB77,#4ECDC4); transition:width .5s ease; }
+.phase-badges { display:flex; gap:8px; justify-content:center; margin:16px 0; flex-wrap:wrap; }
+.phase-badge { padding:6px 14px; border-radius:20px; font-size:0.72rem; font-weight:700; letter-spacing:.05em; }
+.pb-easy { background:rgba(107,203,119,0.3); color:#6BCB77; border:1px solid #6BCB77; }
+.pb-mid  { background:rgba(255,217,61,0.3); color:var(--primary); border:1px solid var(--primary); }
+.pb-hard { background:rgba(255,107,107,0.3); color:#FF6B6B; border:1px solid #FF6B6B; }
+.pb-exp  { background:rgba(168,85,247,0.3); color:#A855F7; border:1px solid #A855F7; }
+.play-btn { background:linear-gradient(135deg,#FF6B6B,#FF8E53); border:none; border-radius:60px; padding:18px 60px; font-family:'Nunito', sans-serif; font-size:1.5rem; color:white; cursor:pointer; box-shadow:0 6px 25px rgba(255,107,107,0.5); transition:all .2s; width:100%; margin-bottom:14px; }
+.play-btn:hover { transform:scale(1.03); }
+.play-btn:active { transform:scale(0.97); }
+.sec-btns { display:flex; gap:10px; }
+.sec-btn { flex:1; background:rgba(255,255,255,0.1); border:2px solid rgba(255,255,255,0.2); border-radius:14px; padding:12px 8px; font-family:'Nunito', sans-serif; font-size:0.82rem; color:white; cursor:pointer; transition:all .2s; text-align:center; }
+.sec-btn:hover { background:rgba(255,255,255,0.2); border-color:var(--blue); }
+
+/* LEVEL SELECT */
+#levelScreen { padding:0 16px 80px; overflow-y:auto; align-items:flex-start; justify-content:flex-start; background:linear-gradient(180deg,#1a1a2e,#0f3460); }
+.ls-header { position:sticky; top:0; z-index:10; width:100%; max-width:600px; background:linear-gradient(180deg,#1a1a2e 80%,transparent); padding:16px 0 8px; margin:0 auto; display:flex; align-items:center; justify-content:center; gap:16px; }
+.back-btn { background:rgba(255,255,255,0.1); border:none; border-radius:12px; padding:8px 14px; color:white; cursor:pointer; font-size:1.2rem; font-family:'Nunito', sans-serif; transition:background .2s; }
+.back-btn:hover { background:rgba(255,255,255,0.2); }
+.ls-title { font-family:'Nunito', sans-serif; font-size:1.5rem; color:var(--primary); }
+.phase-section { width:100%; max-width:600px; margin:12px auto; }
+.phase-title { font-family:'Nunito', sans-serif; font-size:0.9rem; padding:7px 14px; border-radius:10px; margin-bottom:10px; display:inline-block; }
+.levels-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; }
+.level-dot { aspect-ratio:1; border-radius:12px; display:flex; align-items:center; justify-content:center; font-family:'Nunito', sans-serif; font-size:0.82rem; cursor:pointer; transition:all .2s; border:2px solid transparent; }
+.ld-unlocked { background:rgba(255,255,255,0.12); border-color:rgba(255,255,255,0.2); }
+.ld-unlocked:hover { transform:scale(1.1); background:rgba(255,255,255,0.2); }
+.ld-completed { background:rgba(107,203,119,0.3); border-color:#6BCB77; color:#6BCB77; }
+.ld-current { background:linear-gradient(135deg,var(--primary),#FFB800); color:#1a1a2e; border-color:var(--primary); box-shadow:0 0 15px rgba(255,217,61,0.5); animation:ldPulse 1.5s infinite; }
+.ld-locked { background:rgba(255,255,255,0.04); border-color:rgba(255,255,255,0.1); color:rgba(255,255,255,0.3); cursor:not-allowed; font-size:0.85rem; }
+@keyframes ldPulse { 0%,100%{box-shadow:0 0 15px rgba(255,217,61,0.5)} 50%{box-shadow:0 0 25px rgba(255,217,61,0.8)} }
+.ad-dot::after { content:'📺'; position:absolute; top:-6px; right:-6px; font-size:0.6rem; background:#FF6B6B; border-radius:50%; width:15px; height:15px; display:flex; align-items:center; justify-content:center; }
+.level-dot { position:relative; }
+
+/* GAME SCREEN */
+#gameScreen { background:#1a1a2e; display:flex; flex-direction:column; justify-content:flex-start; height:100vh; max-height:100vh; }
+.game-header { width:100%; padding:10px 14px 8px; display:flex; align-items:center; gap:10px; background:rgba(0,0,0,0.4); backdrop-filter:blur(10px); z-index:10; flex-shrink:0; }
+.lvl-badge { background:linear-gradient(135deg,var(--primary),#FFB800); color:#1a1a2e; border-radius:10px; padding:5px 12px; font-family:'Nunito', sans-serif; font-size:0.95rem; white-space:nowrap; flex-shrink:0; }
+.game-cmd { flex:1; font-family:'Nunito', sans-serif; font-size:clamp(0.9rem,3.5vw,1.15rem); line-height:1.2; }
+.target-dot { width:26px; height:26px; border-radius:50%; border:3px solid white; box-shadow:0 0 12px rgba(255,255,255,0.4); flex-shrink:0; }
+.hint-btn { background:rgba(255,255,255,0.15); border:2px solid rgba(255,255,255,0.3); border-radius:10px; padding:5px 10px; color:white; cursor:pointer; font-size:1.1rem; display:flex; align-items:center; gap:4px; flex-shrink:0; transition:all .2s; }
+.hint-btn:hover { background:rgba(255,217,61,0.3); border-color:var(--primary); }
+.hint-cnt { font-family:'Nunito', sans-serif; font-size:0.8rem; background:var(--primary); color:#1a1a2e; border-radius:50%; width:18px; height:18px; display:flex; align-items:center; justify-content:center; }
+
+.game-scene-wrap { flex:1; width:100%; min-height:0; height:100%; position:relative; overflow:hidden; }
+.game-scene-wrap.has-bg .game-scene {
+  background: none !important;
+  background-image: var(--bg-img) !important;
+  background-size: cover !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+  cursor: default;
+}
+.game-scene { width:100%; height:100%; position:absolute; inset:0; min-height:100%; }
+
+/* Scene backgrounds */
+.style-cartoon .game-scene { background:linear-gradient(180deg,#87CEEB 0%,#B8E4F9 40%,#98FB98 70%,#7CCD7C 100%); }
+.style-squishy .game-scene { background:linear-gradient(180deg,#FFB3C6 0%,#FFC8DD 40%,#E8B4D0 70%,#D4A5C9 100%); }
+.style-watercolor .game-scene { background:linear-gradient(180deg,#E8F4FD 0%,#BFDBFE 40%,#BBF7D0 70%,#A7F3D0 100%); }
+.style-pixel .game-scene { background:repeating-linear-gradient(0deg,transparent,transparent 16px,rgba(0,0,0,0.05) 16px,rgba(0,0,0,0.05) 17px),repeating-linear-gradient(90deg,transparent,transparent 16px,rgba(0,0,0,0.05) 16px,rgba(0,0,0,0.05) 17px),linear-gradient(180deg,#1e1b4b,#312e81,#4338ca); }
+.style-paper .game-scene { background:linear-gradient(180deg,#FEF9C3,#FEF3C7 40%,#D1FAE5 70%,#ECFDF5 100%); }
+
+/* Scene objects */
+.obj-wrap { position:absolute; display:flex; flex-direction:column; align-items:center; cursor:pointer; transition:transform .15s; transform-origin:center bottom; outline:none; border:none; -webkit-tap-highlight-color:transparent; }
+.obj-wrap:hover { transform:scale(1.08) rotate(var(--rot)); }
+.obj-wrap:focus { outline:none; border:none; box-shadow:none; }
+.obj-wrap svg { outline:none; border:none; display:block; }
+.obj-svg { display:block; transition:transform .2s; }
+.obj-name-tag { font-family:'Nunito', sans-serif; font-size:0.62rem; color:white; text-align:center; background:rgba(0,0,0,0.55); border-radius:6px; padding:2px 6px; margin-top:3px; pointer-events:none; white-space:nowrap; }
+
+/* Correct / Wrong animations */
+.obj-wrap.anim-correct { z-index:999; outline:none; border:none; box-shadow:none; pointer-events:none; }
+.obj-wrap.anim-wrong   { animation: objWrong .4s ease; }
+.obj-wrap.anim-hint    { animation: objHint 1s ease 3; }
+
+@keyframes objBounce {
+  0%   { transform: scale(1)    rotate(var(--rot)); }
+  20%  { transform: scale(1.65) rotate(0deg); }
+  50%  { transform: scale(1.45) rotate(0deg); }
+  70%  { transform: scale(1.55) rotate(0deg); }
+  100% { transform: scale(1.5)  rotate(0deg); }
+}
+@keyframes objWrong {
+  0%,100%{ transform: translateX(0)   rotate(var(--rot)); }
+  25%    { transform: translateX(-9px) rotate(var(--rot)); }
+  75%    { transform: translateX(9px)  rotate(var(--rot)); }
+}
+@keyframes objHint {
+  0%,100%{ filter:none; }
+  50%    { filter: drop-shadow(0 0 14px gold) brightness(1.6); }
+}
+
+/* Glow ring — JS tarafından eklenen bloom div */
+.glow-ring { display:none; }
+
+/* Bloom overlay — JS tarafından ekleniyor, nesnenin tam boyutuna göre */
+.bloom-overlay {
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 49;
+  transform: scale(0);
+  animation: bloomExpand 0.8s cubic-bezier(.2,.8,.3,1) forwards;
+}
+@keyframes bloomExpand {
+  0%   { transform: scale(0);   opacity: 0; }
+  40%  { transform: scale(1.1); opacity: 1; }
+  70%  { transform: scale(0.95);opacity: 1; }
+  100% { transform: scale(1);   opacity: 0.85; }
+}
+
+/* Hotspot correct — sadece bloom, border yok */
+.hotspot.anim-correct {
+  border: none !important;
+  background: transparent !important;
+  animation: hotspotBounce 0.9s cubic-bezier(.34,1.56,.64,1) forwards;
+}
+@keyframes hotspotBounce {
+  0%   { transform: scale(1); }
+  20%  { transform: scale(1.08); }
+  60%  { transform: scale(0.97); }
+  100% { transform: scale(1.04); }
+}
+
+/* Particles */
+.particle { position:fixed; pointer-events:none; border-radius:50%; animation:ptFly .8s ease-out forwards; z-index:200; }
+@keyframes ptFly { 0%{transform:translate(0,0) scale(1);opacity:1} 100%{transform:translate(var(--dx),var(--dy)) scale(0);opacity:0} }
+
+/* Feedback banner */
+.fb-banner { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(0); z-index:300; font-family:'Nunito', sans-serif; font-size:clamp(1.8rem,7vw,2.8rem); padding:14px 28px; border-radius:18px; text-align:center; pointer-events:none; transition:transform .2s cubic-bezier(.34,1.56,.64,1); }
+.fb-banner.show { transform:translate(-50%,-50%) scale(1); }
+.fb-correct { background:linear-gradient(135deg,#6BCB77,#4ECDC4); color:white; box-shadow:0 10px 40px rgba(107,203,119,0.5); }
+.fb-wrong   { background:linear-gradient(135deg,#FF6B6B,#FF8E53); color:white; box-shadow:0 10px 40px rgba(255,107,107,0.5); }
+
+/* Level complete overlay */
+.lc-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:400; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity .3s; backdrop-filter:blur(6px); }
+.lc-overlay.show { opacity:1; pointer-events:all; }
+.lc-card { background:linear-gradient(135deg,#16213e,#0f3460); border:2px solid rgba(255,217,61,0.4); border-radius:28px; padding:28px 24px; text-align:center; max-width:320px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,0.5); transform:scale(0.8); transition:transform .3s cubic-bezier(.34,1.56,.64,1); }
+.lc-overlay.show .lc-card { transform:scale(1); }
+.lc-emoji { font-size:3.5rem; display:block; margin-bottom:8px; }
+.lc-title { font-family:'Nunito', sans-serif; font-size:1.8rem; color:var(--primary); margin-bottom:4px; }
+.lc-sub { font-size:0.9rem; opacity:0.7; margin-bottom:18px; }
+.stars-row { display:flex; justify-content:center; gap:8px; margin-bottom:18px; }
+.star { font-size:2rem; opacity:0.25; transition:all .3s; }
+.star.earned { opacity:1; animation:starPop .4s cubic-bezier(.34,1.56,.64,1); }
+@keyframes starPop { 0%{transform:scale(0)} 100%{transform:scale(1)} }
+.next-btn { background:linear-gradient(135deg,#6BCB77,#4ECDC4); border:none; border-radius:50px; padding:14px 40px; font-family:'Nunito', sans-serif; font-size:1.2rem; color:white; cursor:pointer; width:100%; box-shadow:0 4px 20px rgba(107,203,119,0.4); margin-bottom:10px; transition:all .2s; }
+.next-btn:hover { transform:scale(1.03); }
+.menu-sm-btn { background:transparent; border:2px solid rgba(255,255,255,0.2); border-radius:50px; padding:10px 30px; font-family:'Nunito', sans-serif; font-size:1rem; color:white; cursor:pointer; width:100%; transition:all .2s; }
+.menu-sm-btn:hover { background:rgba(255,255,255,0.1); }
+
+/* Ad overlay */
+.ad-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:500; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity .3s; }
+.ad-overlay.show { opacity:1; pointer-events:all; }
+.ad-card { background:#16213e; border:2px solid #FF6B6B; border-radius:20px; padding:22px; max-width:280px; width:90%; text-align:center; }
+.ad-lbl { font-size:0.7rem; color:#FF6B6B; letter-spacing:.1em; margin-bottom:10px; }
+.ad-mock { height:110px; background:linear-gradient(135deg,#0f3460,#16213e); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:2.5rem; margin-bottom:14px; }
+.ad-cd { font-family:'Nunito', sans-serif; font-size:1rem; margin-bottom:10px; color:var(--primary); }
+.ad-skip { background:var(--primary); border:none; border-radius:10px; padding:10px 24px; font-family:'Nunito', sans-serif; color:#1a1a2e; cursor:pointer; font-size:1rem; display:none; width:100%; }
+.ad-skip.vis { display:block; }
+
+/* Hotspot — görsel üzerindeki tıklanabilir alan */
+.hotspot {
+  position: absolute;
+  cursor: pointer;
+  border-radius: 8px;
+  border: none;
+  outline: none;
+  background: transparent;
+  -webkit-tap-highlight-color: transparent;
+  z-index: 5;
+}
+.hotspot:focus { outline: none; }
+/* Hint animasyonu hotspot için */
+.hotspot.anim-hint {
+  animation: hotspotHint 1s ease 3;
+}
+@keyframes hotspotHint {
+  0%,100% { border-color: transparent; background: transparent; box-shadow: none; }
+  50%      { border-color: gold; background: rgba(255,215,0,0.25); box-shadow: 0 0 24px gold; }
+}
+
+
+/* ===== SHOWCASE OVERLAY ===== */
+#showcase-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  background: rgba(0,0,0,0.6);
+  transition: opacity 0.3s ease;
+}
+#showcase-overlay.active {
+  opacity: 1;
+  pointer-events: all;
+}
+#showcase-bg { display:none; }
+#showcase-bravo { display:none; }
+#showcase-label { display:none; }
+#showcase-stars { display:none; }
+#showcase-ring  { display:none; }
+#showcase-svg { max-height:55vh; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+
+#showcase-obj {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transform: scale(0);
+  transition: transform 0.5s cubic-bezier(.34,1.56,.64,1);
+  max-height: 90vh;
+  overflow: hidden;
+}
+#showcase-overlay.active #showcase-obj {
+  transform: scale(1);
+}
+
+/* decor floaters *//* decor floaters */
+.bg-decor { position:absolute; pointer-events:none; opacity:0.12; animation:floatD 5s ease-in-out infinite; font-size:1.4rem; }
+@keyframes floatD { 0%,100%{transform:translateY(0) rotate(0)} 50%{transform:translateY(-10px) rotate(5deg)} }
+
+/* Objects on photo background pop with shadow */
+.has-bg .obj-wrap svg { filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5)); }
+.has-bg .obj-wrap[data-is-target="1"] svg { filter: drop-shadow(0 6px 16px rgba(0,0,0,0.6)) brightness(1.05); }
+
+@media (max-width:400px) {
+  .style-card { width:82px; height:92px; }
+  .levels-grid { gap:6px; }
+}
+#levelScreen::-webkit-scrollbar { width:4px; }
+#levelScreen::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.2); border-radius:4px; }
+</style>
+</head>
+<body>
+
+<!-- LANG -->
+<div id="langScreen" class="screen active">
+  <div class="blob blob1"></div><div class="blob blob2"></div><div class="blob blob3"></div>
+  <div style="position:relative;z-index:1;text-align:center;padding:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;">
+    <div class="lang-logo">
+      <span style="color:#FF6B6B">🔴</span><span style="color:#4ECDC4">🔵</span><span style="color:#FFD93D">🟡</span><span style="color:#6BCB77">🟢</span>
+    </div>
+    <div class="lang-logo" style="margin-top:4px;">
+      <span style="color:#FF6B6B">R</span><span style="color:#FFD93D">E</span><span style="color:#6BCB77">N</span><span style="color:#4ECDC4">K</span>
+      <span>  </span>
+      <span style="color:#FF6B6B">D</span><span style="color:#FFD93D">E</span><span style="color:#6BCB77">D</span><span style="color:#4ECDC4">E</span><span style="color:#A855F7">K</span><span style="color:#FF6B6B">T</span><span style="color:#FFD93D">İ</span><span style="color:#6BCB77">F</span><span style="color:#4ECDC4">İ</span>
+    </div>
+    <div class="lang-sub">COLOR DETECTIVE</div>
+    <div style="font-family:'Nunito', sans-serif;font-size:1rem;margin-bottom:28px;opacity:0.8;">Dilini seç / Choose your language</div>
+    <div class="lang-btns">
+      <div class="lang-btn" onclick="selectLang('tr')"><span class="flag">🇹🇷</span><span class="lname">Türkçe</span></div>
+      <div class="lang-btn" onclick="selectLang('en')"><span class="flag">🇬🇧</span><span class="lname">English</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- STYLE -->
+<div id="styleScreen" class="screen" style="display:none!important;">
+  <div class="blob blob1"></div><div class="blob blob2"></div>
+  <div style="position:relative;z-index:1;width:100%;max-width:600px;padding:20px;text-align:center;">
+    <div class="style-title" id="sTitleTxt">SANAT TARZINI SEÇ!</div>
+    <div class="style-sub" id="sSubTxt">Tüm leveller bu tarzla görünecek.</div>
+    <div class="style-grid">
+      <div class="style-card selected" data-style="cartoon" onclick="selectStyle(this)"><div class="style-preview preview-cartoon">🎨</div><div class="style-label" id="sl-cartoon">Cartoon</div></div>
+      <div class="style-card" data-style="squishy" onclick="selectStyle(this)"><div class="style-preview preview-squishy">🩷</div><div class="style-label" id="sl-squishy">Squishy</div></div>
+      <div class="style-card" data-style="watercolor" onclick="selectStyle(this)"><div class="style-preview preview-watercolor">💧</div><div class="style-label" id="sl-watercolor">Watercolor</div></div>
+      <div class="style-card" data-style="pixel" onclick="selectStyle(this)"><div class="style-preview preview-pixel">🟪</div><div class="style-label" id="sl-pixel">Chunky Pixel</div></div>
+      <div class="style-card" data-style="paper" onclick="selectStyle(this)"><div class="style-preview preview-paper">📄</div><div class="style-label" id="sl-paper">Paper Cutout</div></div>
+    </div>
+    <button class="confirm-btn" id="confirmBtn" onclick="confirmStyle()">SEÇİMİ ONAYLA</button>
+  </div>
+</div>
+
+<!-- MENU -->
+<div id="menuScreen" class="screen">
+  <div class="menu-bg"></div>
+  <div class="blob blob1"></div><div class="blob blob2"></div>
+  <div class="menu-content">
+    <div class="menu-logo">
+      <span class="logo-icon">🔍</span>
+      <span id="menuTitleTxt" style="background:linear-gradient(135deg,#FFD93D,#FF6B6B,#4ECDC4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Renk Dedektifi</span>
+    </div>
+    <div class="level-progress">
+      <div class="level-text" id="lvlProgTxt">Seviye 1 / 75</div>
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progBar" style="width:1%;"></div></div>
+    </div>
+    <div class="phase-badges">
+      <div class="phase-badge pb-easy" id="bdg-easy">🟢 Kolay</div>
+      <div class="phase-badge pb-mid" id="bdg-mid">🟡 Orta</div>
+      <div class="phase-badge pb-hard" id="bdg-hard">🟠 Zor</div>
+      <div class="phase-badge pb-exp" id="bdg-exp">🔴 Uzman</div>
+    </div>
+    <button class="play-btn" id="playBtn" onclick="startCurrentLevel()">▶ OYNA</button>
+    <div class="sec-btns">
+      <button class="sec-btn" id="levelsBtn" onclick="showScreen('levelScreen')">📋 Seviyeler</button>
+      
+      <button class="sec-btn" id="langBtn" onclick="showScreen('langScreen')">🌐 Dil</button>
+    </div>
+  </div>
+</div>
+
+<!-- LEVEL SELECT -->
+<div id="levelScreen" class="screen">
+  <div class="ls-header">
+    <button class="back-btn" onclick="showScreen('menuScreen')">←</button>
+    <div class="ls-title" id="lsTitleTxt">Seviyeler</div>
+  </div>
+  <div id="levelsContainer" style="width:100%;max-width:600px;"></div>
+</div>
+
+<!-- GAME -->
+<div id="gameScreen" class="screen">
+  <div class="game-header">
+    <button style="background:rgba(255,255,255,0.1);border:none;color:white;border-radius:10px;padding:6px 10px;cursor:pointer;font-size:1rem;font-family:'Nunito', sans-serif;" onclick="showScreen('menuScreen')">←</button>
+    <div class="lvl-badge" id="gameLvlBadge">LVL 1</div>
+    <div class="game-cmd" id="gameCmd">Kırmızı kalemi bul!</div>
+    <div class="target-dot" id="targetDot"></div>
+    <button class="hint-btn" id="speakBtn" onclick="speakCurrentCmd()" title="Tekrar dinle">
+    🔊
+  </button>
+  <button class="hint-btn" id="hintBtn" onclick="useHint()">💡 <span class="hint-cnt" id="hintCnt">3</span></button>
+  </div>
+  <div class="game-scene-wrap style-cartoon" id="sceneWrap">
+    <div class="game-scene" id="gameScene"></div>
+  </div>
+</div>
+
+<!-- FEEDBACK -->
+<div class="fb-banner" id="fbBanner"></div>
+
+<!-- LEVEL COMPLETE -->
+<div class="lc-overlay" id="lcOverlay">
+  <div class="lc-card">
+    <span class="lc-emoji" id="lcEmoji">🎉</span>
+    <div class="lc-title" id="lcTitle">Harika!</div>
+    <div class="lc-sub" id="lcSub">Seviye Tamamlandı!</div>
+    <div class="stars-row"><span class="star" id="st1">⭐</span><span class="star" id="st2">⭐</span><span class="star" id="st3">⭐</span></div>
+    <button class="next-btn" id="nextBtn" onclick="nextLevel()">Sonraki →</button>
+    <button class="menu-sm-btn" id="menuFromLc" onclick="goMenu()">Ana Menü</button>
+  </div>
+</div>
+
+<!-- AD -->
+<!-- SHOWCASE OVERLAY -->
+<div id="showcase-overlay" onclick="this.classList.remove('active'); setTimeout(()=>{document.getElementById('showcase-svg').innerHTML=''; showComplete();},350);">
+  <div id="showcase-bg"></div>
+  <div id="showcase-obj">
+    <div id="showcase-bravo">🎉 Bravo!</div>
+    <div style="position:relative; display:flex; align-items:center; justify-content:center;">
+      <div id="showcase-ring"></div>
+      <div id="showcase-svg"></div>
+      <div id="showcase-stars"></div>
+    </div>
+    <div id="showcase-label"></div>
+  </div>
+</div>
+
+<div class="ad-overlay" id="adOverlay">
+  <div class="ad-card">
+    <div class="ad-lbl">REKLAM / ADVERTISEMENT</div>
+    <div class="ad-mock">🎮</div>
+    <div class="ad-cd" id="adCd">5...</div>
+    <button class="ad-skip" id="adSkip">✕ Atla / Skip</button>
+  </div>
+</div>
+
+
+<script>
+// =====================================================================
+// OBJECT LIBRARY — SVG çizimler, renk parametreli
+// Her obje: drawFn(color, size) → SVG string döndürür
+// =====================================================================
+const OBJ_SHAPES = {
+
+  kalem: (col, s=80) => `<svg width="${s}" height="${s*2.5}" viewBox="0 0 40 100" xmlns="http://www.w3.org/2000/svg">
+    <rect x="10" y="10" width="20" height="65" rx="3" fill="${col}"/>
+    <polygon points="10,75 30,75 20,95" fill="#F5DEB3"/>
+    <polygon points="18,85 22,85 20,93" fill="#222"/>
+    <rect x="10" y="8" width="20" height="8" rx="2" fill="${adjustBrightness(col,-30)}"/>
+    <rect x="10" y="10" width="6" height="65" rx="2" fill="${adjustBrightness(col,30)}" opacity="0.4"/>
+  </svg>`,
+
+  silgi: (col, s=70) => `<svg width="${s*1.5}" height="${s}" viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg">
+    <rect x="5" y="8" width="50" height="26" rx="5" fill="${col}"/>
+    <rect x="5" y="8" width="50" height="8" rx="5" fill="${adjustBrightness(col,-20)}"/>
+    <rect x="5" y="8" width="15" height="26" rx="3" fill="white" opacity="0.3"/>
+    <line x1="15" y1="8" x2="15" y2="34" stroke="${adjustBrightness(col,-40)}" stroke-width="1.5"/>
+  </svg>`,
+
+  top: (col, s=80) => `<svg width="${s}" height="${s}" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="40" cy="40" r="35" fill="${col}"/>
+    <circle cx="40" cy="40" r="35" fill="none" stroke="${adjustBrightness(col,-30)}" stroke-width="2"/>
+    <path d="M15,30 Q40,20 65,30" fill="none" stroke="${adjustBrightness(col,-25)}" stroke-width="2"/>
+    <path d="M10,50 Q40,60 70,50" fill="none" stroke="${adjustBrightness(col,-25)}" stroke-width="2"/>
+    <ellipse cx="30" cy="28" rx="8" ry="5" fill="white" opacity="0.25" transform="rotate(-20,30,28)"/>
+  </svg>`,
+
+  yastık: (col, s=90) => `<svg width="${s*1.3}" height="${s}" viewBox="0 0 100 75" xmlns="http://www.w3.org/2000/svg">
+    <rect x="5" y="8" width="90" height="60" rx="18" fill="${col}"/>
+    <rect x="5" y="8" width="90" height="60" rx="18" fill="none" stroke="${adjustBrightness(col,-20)}" stroke-width="2"/>
+    <ellipse cx="30" cy="25" rx="10" ry="6" fill="white" opacity="0.2" transform="rotate(-15,30,25)"/>
+    <line x1="50" y1="12" x2="50" y2="62" stroke="${adjustBrightness(col,-15)}" stroke-width="1.5" stroke-dasharray="3,4"/>
+  </svg>`,
+
+  kitap: (col, s=75) => `<svg width="${s}" height="${s*1.2}" viewBox="0 0 60 72" xmlns="http://www.w3.org/2000/svg">
+    <rect x="6" y="5" width="48" height="62" rx="4" fill="${col}"/>
+    <rect x="6" y="5" width="10" height="62" rx="3" fill="${adjustBrightness(col,-25)}"/>
+    <rect x="18" y="18" width="28" height="3" rx="1.5" fill="white" opacity="0.4"/>
+    <rect x="18" y="26" width="22" height="3" rx="1.5" fill="white" opacity="0.4"/>
+    <rect x="18" y="34" width="25" height="3" rx="1.5" fill="white" opacity="0.4"/>
+    <rect x="18" y="42" width="20" height="3" rx="1.5" fill="white" opacity="0.4"/>
+    <rect x="6" y="5" width="12" height="62" rx="3" fill="white" opacity="0.08"/>
+  </svg>`,
+
+  bardak: (col, s=70) => `<svg width="${s*0.8}" height="${s*1.2}" viewBox="0 0 50 70" xmlns="http://www.w3.org/2000/svg">
+    <path d="M8,12 L5,60 Q5,65 10,65 L40,65 Q45,65 45,60 L42,12 Z" fill="${col}"/>
+    <path d="M8,12 L42,12 L40,22 L10,22 Z" fill="${adjustBrightness(col,-15)}"/>
+    <rect x="8" y="12" width="10" height="48" fill="white" opacity="0.15" rx="3"/>
+    <ellipse cx="25" cy="12" rx="17" ry="4" fill="${adjustBrightness(col,-10)}"/>
+  </svg>`,
+
+  ayıcık: (col, s=85) => `<svg width="${s}" height="${s*1.1}" viewBox="0 0 80 90" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="40" cy="55" r="28" fill="${col}"/>
+    <circle cx="40" cy="28" r="18" fill="${col}"/>
+    <circle cx="22" cy="15" r="10" fill="${col}"/>
+    <circle cx="58" cy="15" r="10" fill="${col}"/>
+    <circle cx="22" cy="15" r="6" fill="${adjustBrightness(col,-20)}"/>
+    <circle cx="58" cy="15" r="6" fill="${adjustBrightness(col,-20)}"/>
+    <circle cx="40" cy="30" r="9" fill="${adjustBrightness(col,-15)}"/>
+    <circle cx="35" cy="26" r="3" fill="#333"/>
+    <circle cx="45" cy="26" r="3" fill="#333"/>
+    <circle cx="40" cy="32" r="2" fill="#555"/>
+    <circle cx="36" cy="25" r="1" fill="white"/>
+    <circle cx="46" cy="25" r="1" fill="white"/>
+    <circle cx="28" cy="60" r="8" fill="${adjustBrightness(col,-10)}"/>
+    <circle cx="52" cy="60" r="8" fill="${adjustBrightness(col,-10)}"/>
+  </svg>`,
+
+  araba: (col, s=100) => `<svg width="${s*1.4}" height="${s}" viewBox="0 0 120 80" xmlns="http://www.w3.org/2000/svg">
+    <rect x="8" y="35" width="104" height="32" rx="8" fill="${col}"/>
+    <path d="M25,35 L38,15 L82,15 L95,35 Z" fill="${col}"/>
+    <path d="M25,35 L38,15 L82,15 L95,35 Z" fill="${adjustBrightness(col,-15)}"/>
+    <rect x="40" y="17" width="18" height="16" rx="3" fill="#AEE4F8" opacity="0.9"/>
+    <rect x="62" y="17" width="18" height="16" rx="3" fill="#AEE4F8" opacity="0.9"/>
+    <circle cx="30" cy="67" r="11" fill="#333"/><circle cx="30" cy="67" r="6" fill="#777"/>
+    <circle cx="90" cy="67" r="11" fill="#333"/><circle cx="90" cy="67" r="6" fill="#777"/>
+    <rect x="8" y="35" width="30" height="8" rx="3" fill="white" opacity="0.2"/>
+  </svg>`,
+
+  çiçek: (col, s=80) => `<svg width="${s}" height="${s*1.2}" viewBox="0 0 70 85" xmlns="http://www.w3.org/2000/svg">
+    <rect x="32" y="50" width="6" height="32" rx="3" fill="#5D9E3A"/>
+    <ellipse cx="42" cy="68" rx="10" ry="6" fill="#5D9E3A" transform="rotate(-30,42,68)"/>
+    <ellipse cx="35" cy="42" rx="10" ry="16" fill="${col}" transform="rotate(0,35,42)"/>
+    <ellipse cx="35" cy="42" rx="10" ry="16" fill="${col}" transform="rotate(60,35,42)"/>
+    <ellipse cx="35" cy="42" rx="10" ry="16" fill="${col}" transform="rotate(120,35,42)"/>
+    <ellipse cx="35" cy="42" rx="10" ry="16" fill="${adjustBrightness(col,-15)}" transform="rotate(30,35,42)"/>
+    <ellipse cx="35" cy="42" rx="10" ry="16" fill="${adjustBrightness(col,-15)}" transform="rotate(90,35,42)"/>
+    <ellipse cx="35" cy="42" rx="10" ry="16" fill="${adjustBrightness(col,-15)}" transform="rotate(150,35,42)"/>
+    <circle cx="35" cy="42" r="10" fill="#FFD700"/>
+    <circle cx="35" cy="42" r="7" fill="#FFA500"/>
+    <circle cx="32" cy="40" r="2" fill="#FFD700" opacity="0.7"/>
+  </svg>`,
+
+  şapka: (col, s=80) => `<svg width="${s*1.3}" height="${s}" viewBox="0 0 100 75" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="50" cy="62" rx="48" ry="12" fill="${adjustBrightness(col,-20)}"/>
+    <rect x="22" y="18" width="56" height="46" rx="8" fill="${col}"/>
+    <rect x="22" y="18" width="56" height="14" rx="4" fill="${adjustBrightness(col,-25)}"/>
+    <rect x="22" y="20" width="16" height="44" rx="5" fill="white" opacity="0.15"/>
+  </svg>`,
+
+  muz: (col, s=80) => `<svg width="${s*1.3}" height="${s}" viewBox="0 0 100 70" xmlns="http://www.w3.org/2000/svg">
+    <path d="M15,55 Q10,30 35,15 Q60,5 80,20 Q70,35 50,40 Q30,45 25,55 Z" fill="${col}"/>
+    <path d="M15,55 Q20,50 25,48" stroke="${adjustBrightness(col,-30)}" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M35,15 Q38,10 40,8" stroke="${adjustBrightness(col,-30)}" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <path d="M25,35 Q45,28 65,25" stroke="${adjustBrightness(col,-20)}" stroke-width="2" fill="none" opacity="0.5"/>
+  </svg>`,
+
+  elma: (col, s=80) => `<svg width="${s}" height="${s*1.1}" viewBox="0 0 75 80" xmlns="http://www.w3.org/2000/svg">
+    <path d="M37,12 Q55,8 62,25 Q70,42 62,58 Q55,72 37,72 Q20,72 13,58 Q5,42 13,25 Q20,8 37,12 Z" fill="${col}"/>
+    <path d="M37,12 Q30,0 28,5" stroke="#5D3A1A" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <ellipse cx="26" cy="22" rx="7" ry="4" fill="white" opacity="0.25" transform="rotate(-20,26,22)"/>
+    <path d="M13,25 Q20,20 37,18" stroke="${adjustBrightness(col,-20)}" stroke-width="1.5" fill="none"/>
+  </svg>`,
+
+  tava: (col, s=90) => `<svg width="${s*1.5}" height="${s}" viewBox="0 0 120 75" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="55" cy="45" rx="45" ry="22" fill="${col}"/>
+    <ellipse cx="55" cy="40" rx="45" ry="22" fill="${col}"/>
+    <ellipse cx="55" cy="38" rx="42" ry="18" fill="${adjustBrightness(col,10)}"/>
+    <rect x="98" y="35" width="22" height="8" rx="4" fill="#555"/>
+    <ellipse cx="55" cy="38" rx="20" ry="8" fill="${adjustBrightness(col,20)}" opacity="0.3"/>
+  </svg>`,
+
+  çorap: (col, s=80) => `<svg width="${s}" height="${s*1.3}" viewBox="0 0 65 85" xmlns="http://www.w3.org/2000/svg">
+    <path d="M15,5 L50,5 L50,55 Q50,70 60,72 Q65,73 62,80 Q58,85 45,82 Q30,78 22,68 Q12,55 15,5 Z" fill="${col}"/>
+    <rect x="15" y="5" width="35" height="10" rx="3" fill="${adjustBrightness(col,-20)}"/>
+    <path d="M20,10 L45,10" stroke="white" stroke-width="2" stroke-dasharray="4,3" opacity="0.4"/>
+    <rect x="15" y="5" width="10" height="77" rx="4" fill="white" opacity="0.1"/>
+  </svg>`,
+
+  sabun: (col, s=75) => `<svg width="${s*1.3}" height="${s}" viewBox="0 0 95 68" xmlns="http://www.w3.org/2000/svg">
+    <rect x="8" y="15" width="79" height="45" rx="14" fill="${col}"/>
+    <ellipse cx="47" cy="12" rx="18" ry="8" fill="${adjustBrightness(col,-15)}"/>
+    <circle cx="35" cy="28" r="4" fill="white" opacity="0.25"/>
+    <ellipse cx="55" cy="38" rx="12" ry="6" fill="white" opacity="0.15"/>
+    <circle cx="65" cy="25" r="2.5" fill="white" opacity="0.3"/>
+  </svg>`,
+
+  kova: (col, s=80) => `<svg width="${s*0.9}" height="${s*1.1}" viewBox="0 0 65 80" xmlns="http://www.w3.org/2000/svg">
+    <path d="M10,20 L5,68 Q5,73 10,73 L55,73 Q60,73 60,68 L55,20 Z" fill="${col}"/>
+    <ellipse cx="32" cy="20" rx="23" ry="7" fill="${adjustBrightness(col,-20)}"/>
+    <path d="M15,10 Q32,3 50,10" fill="none" stroke="#888" stroke-width="3" stroke-linecap="round"/>
+    <rect x="10" y="20" width="12" height="53" rx="4" fill="white" opacity="0.15"/>
+    <line x1="10" y1="45" x2="55" y2="45" stroke="${adjustBrightness(col,-15)}" stroke-width="1.5" stroke-dasharray="5,4"/>
+  </svg>`,
+
+  diş_fırçası: (col, s=90) => `<svg width="${s*2.5}" height="${s*0.6}" viewBox="0 0 180 45" xmlns="http://www.w3.org/2000/svg">
+    <rect x="5" y="16" width="130" height="12" rx="6" fill="${col}"/>
+    <rect x="130" y="10" width="45" height="24" rx="8" fill="${adjustBrightness(col,-20)}"/>
+    <rect x="132" y="12" width="41" height="6" rx="3" fill="white" opacity="0.5"/>
+    <rect x="132" y="20" width="41" height="6" rx="3" fill="white" opacity="0.4"/>
+    <ellipse cx="80" cy="16" rx="30" ry="4" fill="white" opacity="0.2"/>
+  </svg>`,
+
+  şampuan: (col, s=85) => `<svg width="${s*0.75}" height="${s*1.4}" viewBox="0 0 60 105" xmlns="http://www.w3.org/2000/svg">
+    <rect x="12" y="28" width="36" height="70" rx="10" fill="${col}"/>
+    <rect x="18" y="15" width="24" height="18" rx="5" fill="${adjustBrightness(col,-15)}"/>
+    <rect x="22" y="8" width="16" height="10" rx="4" fill="${adjustBrightness(col,-25)}"/>
+    <rect x="12" y="28" width="12" height="70" rx="6" fill="white" opacity="0.15"/>
+    <rect x="16" y="55" width="28" height="3" rx="1.5" fill="white" opacity="0.4"/>
+    <rect x="16" y="63" width="22" height="3" rx="1.5" fill="white" opacity="0.4"/>
+  </svg>`,
+
+  kavanoz: (col, s=80) => `<svg width="${s*0.85}" height="${s*1.1}" viewBox="0 0 60 80" xmlns="http://www.w3.org/2000/svg">
+    <rect x="10" y="20" width="40" height="52" rx="6" fill="${col}"/>
+    <ellipse cx="30" cy="20" rx="20" ry="7" fill="${adjustBrightness(col,-15)}"/>
+    <rect x="8" y="14" width="44" height="10" rx="5" fill="#888"/>
+    <rect x="10" y="20" width="12" height="52" rx="5" fill="white" opacity="0.15"/>
+    <ellipse cx="40" cy="35" rx="6" ry="3" fill="white" opacity="0.2"/>
+  </svg>`,
+
+  robot: (col, s=85) => `<svg width="${s}" height="${s*1.3}" viewBox="0 0 70 90" xmlns="http://www.w3.org/2000/svg">
+    <rect x="15" y="28" width="40" height="32" rx="6" fill="${col}"/>
+    <rect x="18" y="22" width="34" height="24" rx="6" fill="${adjustBrightness(col,-15)}"/>
+    <circle cx="26" cy="31" r="5" fill="#AEE4F8"/><circle cx="26" cy="31" r="3" fill="#2060A0"/>
+    <circle cx="44" cy="31" r="5" fill="#AEE4F8"/><circle cx="44" cy="31" r="3" fill="#2060A0"/>
+    <rect x="24" y="38" width="22" height="5" rx="2.5" fill="#FFD700"/>
+    <rect x="30" y="18" width="10" height="6" rx="3" fill="#888"/>
+    <circle cx="35" cy="15" r="4" fill="#555"/>
+    <rect x="5" y="32" width="10" height="20" rx="4" fill="${adjustBrightness(col,-20)}"/>
+    <rect x="55" y="32" width="10" height="20" rx="4" fill="${adjustBrightness(col,-20)}"/>
+    <rect x="18" y="60" width="14" height="22" rx="5" fill="${adjustBrightness(col,-10)}"/>
+    <rect x="38" y="60" width="14" height="22" rx="5" fill="${adjustBrightness(col,-10)}"/>
+  </svg>`,
+
+  gözlük: (col, s=80) => `<svg width="${s*1.5}" height="${s*0.7}" viewBox="0 0 110 50" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="28" cy="28" r="20" fill="none" stroke="${col}" stroke-width="5"/>
+    <circle cx="82" cy="28" r="20" fill="none" stroke="${col}" stroke-width="5"/>
+    <line x1="48" y1="28" x2="62" y2="28" stroke="${col}" stroke-width="5"/>
+    <line x1="8" y1="28" x2="2" y2="20" stroke="${col}" stroke-width="4" stroke-linecap="round"/>
+    <line x1="102" y1="28" x2="108" y2="20" stroke="${col}" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="28" cy="28" r="14" fill="${col}" opacity="0.15"/>
+    <circle cx="82" cy="28" r="14" fill="${col}" opacity="0.15"/>
+  </svg>`,
+
+  çanta: (col, s=85) => `<svg width="${s*1.1}" height="${s}" viewBox="0 0 80 70" xmlns="http://www.w3.org/2000/svg">
+    <rect x="8" y="22" width="64" height="44" rx="8" fill="${col}"/>
+    <path d="M25,22 L25,14 Q25,8 40,8 Q55,8 55,14 L55,22" fill="none" stroke="${adjustBrightness(col,-20)}" stroke-width="4" stroke-linecap="round"/>
+    <rect x="8" y="22" width="64" height="10" rx="5" fill="${adjustBrightness(col,-15)}"/>
+    <rect x="33" y="38" width="14" height="10" rx="5" fill="${adjustBrightness(col,-25)}"/>
+    <rect x="8" y="22" width="18" height="44" rx="5" fill="white" opacity="0.12"/>
+  </svg>`,
+
+  vazo: (col, s=80) => `<svg width="${s*0.8}" height="${s*1.3}" viewBox="0 0 60 95" xmlns="http://www.w3.org/2000/svg">
+    <path d="M20,10 Q10,12 12,35 Q8,55 5,75 Q5,85 30,85 Q55,85 55,75 Q52,55 48,35 Q50,12 40,10 Z" fill="${col}"/>
+    <ellipse cx="30" cy="10" rx="10" ry="4" fill="${adjustBrightness(col,-20)}"/>
+    <ellipse cx="30" cy="85" rx="25" ry="7" fill="${adjustBrightness(col,-25)}"/>
+    <path d="M20,10 Q10,12 12,35" stroke="white" stroke-width="8" stroke-linecap="round" opacity="0.15"/>
+  </svg>`,
+
+  limon: (col, s=75) => `<svg width="${s}" height="${s*0.9}" viewBox="0 0 70 62" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="35" cy="32" rx="30" ry="22" fill="${col}"/>
+    <ellipse cx="35" cy="32" rx="24" ry="16" fill="${adjustBrightness(col,15)}" opacity="0.5"/>
+    <path d="M5,32 Q35,22 65,32" stroke="${adjustBrightness(col,-20)}" stroke-width="1.5" fill="none"/>
+    <path d="M35,10 Q30,5 28,2" stroke="#5D8A2A" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <ellipse cx="25" cy="25" rx="7" ry="4" fill="white" opacity="0.25" transform="rotate(-20,25,25)"/>
+  </svg>`,
+
+  kelebek: (col, s=85) => `<svg width="${s*1.4}" height="${s}" viewBox="0 0 100 70" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="25" cy="30" rx="22" ry="25" fill="${col}" transform="rotate(-15,25,30)"/>
+    <ellipse cx="75" cy="30" rx="22" ry="25" fill="${col}" transform="rotate(15,75,30)"/>
+    <ellipse cx="22" cy="48" rx="14" ry="16" fill="${adjustBrightness(col,-15)}" transform="rotate(-20,22,48)"/>
+    <ellipse cx="78" cy="48" rx="14" ry="16" fill="${adjustBrightness(col,-15)}" transform="rotate(20,78,48)"/>
+    <ellipse cx="20" cy="25" rx="6" ry="4" fill="white" opacity="0.3"/>
+    <ellipse cx="80" cy="25" rx="6" ry="4" fill="white" opacity="0.3"/>
+    <line x1="45" y1="10" x2="50" y2="60" stroke="#333" stroke-width="3" stroke-linecap="round"/>
+    <path d="M50,15 Q42,8 38,3" stroke="#333" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M50,15 Q58,8 62,3" stroke="#333" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <circle cx="38" cy="3" r="2.5" fill="#333"/>
+    <circle cx="62" cy="3" r="2.5" fill="#333"/>
+  </svg>`,
+
+  yapboz: (col, s=80) => `<svg width="${s}" height="${s}" viewBox="0 0 70 70" xmlns="http://www.w3.org/2000/svg">
+    <rect x="8" y="8" width="25" height="25" rx="4" fill="${col}"/>
+    <rect x="37" y="8" width="25" height="25" rx="4" fill="${adjustBrightness(col,-20)}"/>
+    <rect x="8" y="37" width="25" height="25" rx="4" fill="${adjustBrightness(col,-10)}"/>
+    <rect x="37" y="37" width="25" height="25" rx="4" fill="${col}"/>
+    <circle cx="33" cy="20" r="5" fill="${col}"/>
+    <circle cx="50" cy="33" r="5" fill="${adjustBrightness(col,-20)}"/>
+    <circle cx="20" cy="37" r="5" fill="${adjustBrightness(col,-10)}"/>
+    <circle cx="37" cy="50" r="5" fill="${col}"/>
+  </svg>`,
+
+  köpük_ördek: (col, s=75) => `<svg width="${s*1.2}" height="${s}" viewBox="0 0 85 65" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="40" cy="45" rx="32" ry="18" fill="${col}"/>
+    <circle cx="55" cy="28" r="18" fill="${col}"/>
+    <ellipse cx="62" cy="22" rx="7" ry="5" fill="${adjustBrightness(col,-10)}"/>
+    <ellipse cx="60" cy="22" rx="4" ry="3" fill="#FF6600"/>
+    <circle cx="58" cy="20" r="3" fill="#333"/>
+    <circle cx="59" cy="19" r="1" fill="white"/>
+    <ellipse cx="30" cy="43" rx="10" ry="6" fill="white" opacity="0.25"/>
+  </svg>`,
+
+  solucan: (col, s=75) => `<svg width="${s*1.6}" height="${s*0.7}" viewBox="0 0 110 45" xmlns="http://www.w3.org/2000/svg">
+    <path d="M10,22 Q25,5 40,22 Q55,39 70,22 Q85,5 100,22" fill="none" stroke="${col}" stroke-width="12" stroke-linecap="round"/>
+    <circle cx="100" cy="22" r="8" fill="${adjustBrightness(col,-10)}"/>
+    <circle cx="96" cy="19" r="3" fill="#333"/><circle cx="104" cy="19" r="3" fill="#333"/>
+    <circle cx="97" cy="18.5" r="1" fill="white"/><circle cx="105" cy="18.5" r="1" fill="white"/>
+    <path d="M100,10 Q106,5 108,2" stroke="${adjustBrightness(col,-15)}" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M100,10 Q94,5 92,2" stroke="${adjustBrightness(col,-15)}" stroke-width="2" fill="none" stroke-linecap="round"/>
+  </svg>`,
+
+  harita: (col, s=80) => `<svg width="${s*1.3}" height="${s}" viewBox="0 0 95 70" xmlns="http://www.w3.org/2000/svg">
+    <rect x="5" y="8" width="85" height="55" rx="4" fill="${col}"/>
+    <polygon points="5,8 35,18 35,63 5,63" fill="${adjustBrightness(col,-15)}"/>
+    <polygon points="60,8 90,18 90,63 60,63" fill="${adjustBrightness(col,-10)}"/>
+    <line x1="35" y1="8" x2="35" y2="63" stroke="${adjustBrightness(col,-25)}" stroke-width="1.5"/>
+    <line x1="60" y1="8" x2="60" y2="63" stroke="${adjustBrightness(col,-25)}" stroke-width="1.5"/>
+    <circle cx="48" cy="30" r="7" fill="${adjustBrightness(col,-30)}" opacity="0.5"/>
+    <rect x="5" y="8" width="18" height="55" rx="3" fill="white" opacity="0.1"/>
+  </svg>`,
+
+  portakal: (col, s=75) => `<svg width="${s}" height="${s*1.1}" viewBox="0 0 70 75" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="35" cy="42" r="28" fill="${col}"/>
+    <ellipse cx="25" cy="32" rx="8" ry="5" fill="white" opacity="0.22" transform="rotate(-20,25,32)"/>
+    <path d="M35,14 Q32,8 30,5" stroke="#5D8A2A" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <ellipse cx="38" cy="10" rx="8" ry="5" fill="#5D8A2A" transform="rotate(20,38,10)"/>
+    <path d="M10,42 Q35,30 60,42" stroke="${adjustBrightness(col,-25)}" stroke-width="1.5" fill="none"/>
+    <path d="M12,50 Q35,62 58,50" stroke="${adjustBrightness(col,-20)}" stroke-width="1.5" fill="none"/>
+  </svg>`,
+
+  klasör: (col, s=80) => `<svg width="${s*1.2}" height="${s}" viewBox="0 0 90 68" xmlns="http://www.w3.org/2000/svg">
+    <rect x="5" y="22" width="80" height="42" rx="6" fill="${col}"/>
+    <path d="M5,22 L5,18 Q5,14 10,14 L38,14 Q42,14 45,18 L48,22 Z" fill="${adjustBrightness(col,-20)}"/>
+    <rect x="5" y="22" width="80" height="10" rx="4" fill="${adjustBrightness(col,-10)}"/>
+    <rect x="5" y="22" width="20" height="42" rx="4" fill="white" opacity="0.12"/>
+    <line x1="20" y1="45" x2="70" y2="45" stroke="${adjustBrightness(col,-20)}" stroke-width="1.5" stroke-dasharray="5,4"/>
+    <line x1="20" y1="53" x2="60" y2="53" stroke="${adjustBrightness(col,-20)}" stroke-width="1.5" stroke-dasharray="5,4"/>
+  </svg>`,
+
+  ayakkabı: (col, s=85) => `<svg width="${s*1.5}" height="${s}" viewBox="0 0 115 65" xmlns="http://www.w3.org/2000/svg">
+    <path d="M8,45 Q8,30 25,25 L65,22 Q80,20 95,30 L105,40 Q110,48 100,52 L10,52 Q5,52 8,45 Z" fill="${col}"/>
+    <path d="M25,25 L25,22 Q25,15 40,15 L65,15 L65,22" fill="${adjustBrightness(col,-15)}"/>
+    <rect x="8" y="45" width="97" height="10" rx="4" fill="${adjustBrightness(col,-25)}"/>
+    <path d="M30,25 L30,15" stroke="${adjustBrightness(col,-20)}" stroke-width="2"/>
+    <path d="M45,24 L45,15" stroke="${adjustBrightness(col,-20)}" stroke-width="2"/>
+    <path d="M60,23 L60,15" stroke="${adjustBrightness(col,-20)}" stroke-width="2"/>
+    <ellipse cx="25" cy="35" rx="10" ry="5" fill="white" opacity="0.18" transform="rotate(-15,25,35)"/>
+  </svg>`,
+
+  kepçe: (col, s=85) => `<svg width="${s*2}" height="${s*0.7}" viewBox="0 0 150 50" xmlns="http://www.w3.org/2000/svg">
+    <rect x="40" y="20" width="108" height="10" rx="5" fill="${col}"/>
+    <path d="M5,10 Q5,40 20,42 Q35,40 35,25 L35,10 Z" fill="${col}"/>
+    <path d="M5,10 Q5,40 20,42 Q35,40 35,25 L35,10 Z" fill="${adjustBrightness(col,-15)}" transform="scale(0.85) translate(1,2)"/>
+    <rect x="40" y="20" width="40" height="10" rx="5" fill="white" opacity="0.2"/>
+  </svg>`,
+
+  çerçeve: (col, s=80) => `<svg width="${s}" height="${s}" viewBox="0 0 70 70" xmlns="http://www.w3.org/2000/svg">
+    <rect x="5" y="5" width="60" height="60" rx="6" fill="${col}"/>
+    <rect x="14" y="14" width="42" height="42" rx="3" fill="white" opacity="0.85"/>
+    <rect x="18" y="18" width="34" height="28" rx="2" fill="#87CEEB" opacity="0.6"/>
+    <polygon points="18,46 28,32 36,40 44,28 52,46" fill="#6BCB77" opacity="0.6"/>
+    <circle cx="42" cy="26" r="5" fill="#FFD700" opacity="0.7"/>
+    <rect x="5" y="5" width="14" height="60" rx="5" fill="white" opacity="0.15"/>
+  </svg>`,
+
+  heykelcik: (col, s=75) => `<svg width="${s*0.7}" height="${s*1.4}" viewBox="0 0 50 100" xmlns="http://www.w3.org/2000/svg">
+    <rect x="10" y="82" width="30" height="12" rx="3" fill="${adjustBrightness(col,-30)}"/>
+    <rect x="18" y="60" width="14" height="24" rx="4" fill="${col}"/>
+    <circle cx="25" cy="48" r="14" fill="${col}"/>
+    <rect x="8" y="62" width="10" height="20" rx="4" fill="${adjustBrightness(col,-15)}"/>
+    <rect x="32" y="62" width="10" height="20" rx="4" fill="${adjustBrightness(col,-15)}"/>
+    <circle cx="21" cy="45" r="3" fill="${adjustBrightness(col,-20)}"/>
+    <circle cx="29" cy="45" r="3" fill="${adjustBrightness(col,-20)}"/>
+    <path d="M19,53 Q25,57 31,53" fill="none" stroke="${adjustBrightness(col,-20)}" stroke-width="1.5" stroke-linecap="round"/>
+  </svg>`,
+
+  palyaço: (col, s=85) => `<svg width="${s}" height="${s*1.3}" viewBox="0 0 70 90" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="35" cy="32" r="22" fill="#FFE0B2"/>
+    <circle cx="35" cy="32" r="22" fill="none" stroke="#FFC0A0" stroke-width="1"/>
+    <circle cx="35" cy="38" r="7" fill="${col}"/>
+    <circle cx="26" cy="29" r="4" fill="#FF69B4"/>
+    <circle cx="44" cy="29" r="4" fill="#FF69B4"/>
+    <circle cx="26" cy="28" r="3" fill="white"/>
+    <circle cx="44" cy="28" r="3" fill="white"/>
+    <circle cx="27" cy="28" r="1.5" fill="#333"/>
+    <circle cx="45" cy="28" r="1.5" fill="#333"/>
+    <path d="M26,44 Q35,52 44,44" fill="none" stroke="#FF4444" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M35,10 Q35,0 35,0" stroke="none"/>
+    <ellipse cx="10" cy="18" rx="12" ry="8" fill="#FF6B6B" transform="rotate(-20,10,18)"/>
+    <ellipse cx="60" cy="18" rx="12" ry="8" fill="#4ECDC4" transform="rotate(20,60,18)"/>
+    <rect x="20" y="54" width="30" height="32" rx="6" fill="#FF8C00"/>
+    <rect x="12" y="60" width="12" height="20" rx="5" fill="#FF6B6B"/>
+    <rect x="46" y="60" width="12" height="20" rx="5" fill="#4ECDC4"/>
+  </svg>`,
+
+  tarak: (col, s=75) => `<svg width="${s*1.8}" height="${s*0.7}" viewBox="0 0 130 50" xmlns="http://www.w3.org/2000/svg">
+    <rect x="5" y="15" width="120" height="18" rx="9" fill="${col}"/>
+    <rect x="5" y="15" width="40" height="18" rx="9" fill="${adjustBrightness(col,-15)}"/>
+    <rect x="18" y="5" width="8" height="14" rx="4" fill="${col}"/>
+    <rect x="32" y="5" width="8" height="14" rx="4" fill="${col}"/>
+    <rect x="46" y="5" width="8" height="14" rx="4" fill="${col}"/>
+    <rect x="60" y="5" width="8" height="14" rx="4" fill="${col}"/>
+    <rect x="74" y="5" width="8" height="14" rx="4" fill="${col}"/>
+    <rect x="88" y="5" width="8" height="14" rx="4" fill="${col}"/>
+    <rect x="102" y="5" width="8" height="14" rx="4" fill="${col}"/>
+    <rect x="18" y="33" width="8" height="12" rx="4" fill="${adjustBrightness(col,-10)}"/>
+    <rect x="32" y="33" width="8" height="12" rx="4" fill="${adjustBrightness(col,-10)}"/>
+    <rect x="46" y="33" width="8" height="12" rx="4" fill="${adjustBrightness(col,-10)}"/>
+    <rect x="60" y="33" width="8" height="12" rx="4" fill="${adjustBrightness(col,-10)}"/>
+    <rect x="74" y="33" width="8" height="12" rx="4" fill="${adjustBrightness(col,-10)}"/>
+    <rect x="88" y="33" width="8" height="12" rx="4" fill="${adjustBrightness(col,-10)}"/>
+    <rect x="102" y="33" width="8" height="12" rx="4" fill="${adjustBrightness(col,-10)}"/>
+    <rect x="5" y="18" width="40" height="6" rx="3" fill="white" opacity="0.2"/>
+  </svg>`,
+
+  tencere: (col, s=90) => `<svg width="${s*1.1}" height="${s*1.2}" viewBox="0 0 88 100" xmlns="http://www.w3.org/2000/svg">
+    <!-- Gövde -->
+    <ellipse cx="44" cy="90" rx="36" ry="8" fill="${adjustBrightness(col,-30)}" opacity="0.5"/>
+    <path d="M10,42 L10,82 Q10,92 44,92 Q78,92 78,82 L78,42 Z" fill="${col}"/>
+    <path d="M10,42 L10,52 Q10,62 44,62 Q78,62 78,52 L78,42 Z" fill="${adjustBrightness(col,-15)}"/>
+    <!-- Kapak -->
+    <ellipse cx="44" cy="42" rx="34" ry="10" fill="${adjustBrightness(col,-20)}"/>
+    <ellipse cx="44" cy="40" rx="34" ry="10" fill="${adjustBrightness(col,-10)}"/>
+    <!-- Kapak tutacağı -->
+    <ellipse cx="44" cy="32" rx="10" ry="5" fill="${adjustBrightness(col,-25)}"/>
+    <ellipse cx="44" cy="30" rx="8"  ry="4" fill="${adjustBrightness(col,-15)}"/>
+    <!-- Kulplar -->
+    <rect x="2"  y="50" width="12" height="8" rx="4" fill="#888"/>
+    <rect x="74" y="50" width="12" height="8" rx="4" fill="#888"/>
+    <!-- Parlama -->
+    <ellipse cx="26" cy="55" rx="7" ry="14" fill="white" opacity="0.12" transform="rotate(-10,26,55)"/>
+    <!-- Buhar -->
+    <path d="M36,28 Q34,20 36,14" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.6"/>
+    <path d="M44,26 Q42,18 44,12" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.6"/>
+    <path d="M52,28 Q50,20 52,14" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.6"/>
+  </svg>`,
+
+  // generic fallback — renkli top
+  generic: (col, s=75) => `<svg width="${s}" height="${s}" viewBox="0 0 70 70" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="35" cy="35" r="30" fill="${col}"/>
+    <ellipse cx="25" cy="24" rx="8" ry="5" fill="white" opacity="0.25" transform="rotate(-20,25,24)"/>
+    <circle cx="35" cy="35" r="30" fill="none" stroke="${adjustBrightness(col,-25)}" stroke-width="2"/>
+  </svg>`,
+};
+
+// =====================================================================
+// LEVEL BACKGROUND IMAGES
+// =====================================================================
+const LEVEL_IMAGES = {
+  L1_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l1_scene.jpg',
+  L1_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l1_obj.png',
+  L2_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l2_scene.jpg',
+  L3_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l3_scene.jpg',
+  L3_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l3_obj.png',
+  L4_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l4_scene.jpg',
+  L4_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l4_obj.png',
+  L5_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l5_scene.jpg',
+  L5_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l5_obj.png',
+  L6_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l6_scene.jpg',
+  L6_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l6_obj.png',
+  L7_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l7_scene.jpg',
+  L7_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l7_obj.png',
+  L8_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l8_scene.jpg',
+  L8_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l8_obj.png',
+  L9_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l9_scene.jpg',
+  L9_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l9_obj.png',
+  L10_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l10_scene.png',
+  L10_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l10_obj.png',
+  L11_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l11_scene.png',
+  L11_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l11_obj.png',
+  L12_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l12_scene.png',
+  L12_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l12_obj.png',
+  L13_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l13_scene.jpg',
+  L13_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l13_obj.png',
+  L14_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l14_scene.jpg',
+  L14_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l14_obj.png',
+  L15_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l15_scene.jpg',
+  L15_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l15_obj.png',
+  L16_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l16_scene.jpg',
+  L16_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l16_obj.png',
+  L17_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l17_scene.jpg',
+  L17_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l17_obj.png',
+  L18_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l18_scene.jpg',
+  L18_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l18_obj.png',
+  L19_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l19_scene.jpg',
+  L19_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l19_obj.png',
+  L20_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l20_scene.jpg',
+  L20_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l20_obj.png',
+  L21_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l21_scene.jpg',
+  L21_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l21_obj.png',
+  L22_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l22_scene.jpg',
+  L22_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l22_obj.png',
+  L23_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l23_scene.jpg',
+  L23_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l23_obj.png',
+  L24_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l24_scene.jpg',
+  L24_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l24_obj.png',
+  L25_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l25_scene.jpg',
+  L25_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l25_obj.png',
+  L26_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l26_scene.jpg',
+  L26_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l26_obj.png',
+  L27_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l27_scene.jpg',
+  L27_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l27_obj.png',
+  L28_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l28_scene.jpg',
+  L28_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l28_obj.png',
+  L29_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l29_scene.jpg',
+  L29_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l29_obj.png',
+  L30_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l30_scene.jpg',
+  L30_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l30_obj.png',
+  L31_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l31_scene.jpg',
+  L31_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l31_obj.png',
+  L32_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l32_scene.jpg',
+  L32_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l32_obj.png',
+  L33_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l33_scene.jpg',
+  L33_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l33_obj.png',
+  L34_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l34_scene.jpg',
+  L34_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l34_obj.png',
+  L35_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l35_scene.jpg',
+  L35_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l35_obj.png',
+  L36_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l36_scene.jpg',
+  L36_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l36_obj.png',
+  L37_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l37_scene.jpg',
+  L37_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l37_obj.png',
+  L38_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l38_scene.jpg',
+  L38_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l38_obj.png',
+  L39_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l39_scene.jpg',
+  L39_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l39_obj.png',
+  L40_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l40_scene.jpg',
+  L40_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l40_obj.png',
+  L41_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l41_scene.jpg',
+  L41_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l41_obj.png',
+  L42_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l42_scene.jpg',
+  L42_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l42_obj.png',
+  L43_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l43_scene.jpg',
+  L43_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l43_obj.png',
+  L44_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l44_scene.jpg',
+  L44_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l44_obj.png',
+  L45_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l45_scene.jpg',
+  L45_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l45_obj.png',
+  L46_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l46_scene.jpg',
+  L46_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l46_obj.png',
+  L47_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l47_scene.jpg',
+  L47_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l47_obj.png',
+  L48_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l48_scene.jpg',
+  L48_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l48_obj.png',
+  L49_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l49_scene.jpg',
+  L49_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l49_obj.png',
+  L50_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l50_scene.jpg',
+  L50_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l50_obj.png',
+  L51_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l51_scene.jpg',
+  L51_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l51_obj.png',
+  L52_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l52_scene.jpg',
+  L52_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l52_obj.png',
+  L53_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l53_scene.jpg',
+  L53_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l53_obj.png',
+  L54_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l54_scene.jpg',
+  L54_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l54_obj.png',
+  L55_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l55_scene.jpg',
+  L55_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l55_obj.png',
+  L56_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l56_scene.jpg',
+  L56_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l56_obj.png',
+  L57_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l57_scene.jpg',
+  L57_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l57_obj.png',
+  L58_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l58_scene.jpg',
+  L58_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l58_obj.png',
+  L59_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l59_scene.jpg',
+  L59_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l59_obj.png',
+  L60_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l60_scene.jpg',
+  L60_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l60_obj.png',
+  L61_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l61_scene.jpg',
+  L61_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l61_obj.png',
+  L62_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l62_scene.jpg',
+  L62_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l62_obj.png',
+  L63_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l63_scene.jpg',
+  L63_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l63_obj.png',
+  L64_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l64_scene.jpg',
+  L64_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l64_obj.png',
+  L65_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l65_scene.jpg',
+  L65_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l65_obj.png',
+  L66_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l66_scene.jpg',
+  L66_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l66_obj.png',
+  L67_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l67_scene.jpg',
+  L67_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l67_obj.png',
+  L68_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l68_scene.jpg',
+  L68_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l68_obj.png',
+  L69_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l69_scene.jpg',
+  L69_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l69_obj.png',
+  L70_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l70_scene.jpg',
+  L70_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l70_obj.png',
+  L71_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l71_scene.jpg',
+  L71_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l71_obj.png',
+  L72_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l72_scene.jpg',
+  L72_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l72_obj.png',
+  L73_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l73_scene.jpg',
+  L73_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l73_obj.png',
+  L74_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l74_scene.jpg',
+  L74_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l74_obj.png',
+  L75_SCENE: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l75_scene.jpg',
+  L75_OBJ: 'https://leventtyasarr.github.io/renk-dedektifi/assets/l75_obj.png',
+};
+
+// =====================================================================
+// COLOUR NAME → CSS hex
+// =====================================================================
+const COLOR_HEX = {
+  kırmızı:'#E8302A', red:'#E8302A',
+  mavi:'#2D6BDB', blue:'#2D6BDB',
+  yeşil:'#2EB548', green:'#2EB548',
+  sarı:'#F5CE00', yellow:'#F5CE00',
+  turuncu:'#F07D00', orange:'#F07D00',
+  mor:'#7C3AED', purple:'#7C3AED',
+  pembe:'#EC4899', pink:'#EC4899',
+  beyaz:'#F0F0F0', white:'#F0F0F0',
+  siyah:'#2A2A2A', black:'#2A2A2A',
+  kahverengi:'#8B5E3C', brown:'#8B5E3C',
+  gri:'#888888', gray:'#888888',
+  'açık mavi':'#5BC8F5','light blue':'#5BC8F5',
+  'koyu mavi':'#1A3A8A','dark blue':'#1A3A8A',
+  'koyu yeşil':'#145A20','dark green':'#145A20',
+  'koyu kırmızı':'#8B0000','dark red':'#8B0000',
+  'koyu sarı':'#B8860B','dark yellow':'#B8860B',
+  'koyu pembe':'#C2185B','dark pink':'#C2185B',
+  'koyu turuncu':'#C85A00','dark orange':'#C85A00',
+  'koyu mor':'#4A1080','dark purple':'#4A1080',
+  'koyu gri':'#404040','dark gray':'#404040',
+  'koyu kahverengi':'#4A2A12','dark brown':'#4A2A12',
+  'açık kahverengi':'#C4965A','light brown':'#C4965A',
+  'açık yeşil':'#7DC95E','light green':'#7DC95E',
+};
+
+// =====================================================================
+// COLOR BRIGHTNESS ADJUST — hex → hex
+// =====================================================================
+function adjustBrightness(hex, amt) {
+  let c = hex.replace('#','');
+  if (c.length === 3) c = c.split('').map(x=>x+x).join('');
+  let r = Math.max(0,Math.min(255,parseInt(c.slice(0,2),16)+amt));
+  let g = Math.max(0,Math.min(255,parseInt(c.slice(2,4),16)+amt));
+  let b = Math.max(0,Math.min(255,parseInt(c.slice(4,6),16)+amt));
+  return '#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
+}
+
+// =====================================================================
+// LEVEL DEFINITIONS
+// Each object: { shape, colorKey, nameTR, nameEN }
+// colorKey must exist in COLOR_HEX
+// The TARGET object's shape name should match what's in the command
+// =====================================================================
+const LEVELS = [
+  // ===== FAZ 1: KOLAY (1-15) =====
+  {id:1, targetKey:'yeşil', targetShape:'tarak',
+   targetShapeNameTR:'Tarak', targetShapeNameEN:'Comb',
+   roomTR:'Yatak Odası', roomEN:'Bedroom',
+   bgImage: 'L1_SCENE', objImage: 'L1_OBJ',
+   hotspot: {left:24, top:46, width:18, height:14},
+   objects:[]},
+  {id:2, targetKey:'kırmızı', targetShape:'tencere',
+   targetShapeNameTR:'Tencere', targetShapeNameEN:'Pot',
+   roomTR:'Mutfak', roomEN:'Kitchen',
+   bgImage: 'L2_SCENE',
+   hotspot: {left:13, top:30, width:42, height:42},
+   objects:[]},
+  {id:3, targetKey:'sarı', targetShape:'ayıcık',
+   targetShapeNameTR:'Ayıcık', targetShapeNameEN:'Teddy Bear',
+   roomTR:'Çocuk Odası', roomEN:'Kids Room',
+   bgImage: 'L3_SCENE', objImage: 'L3_OBJ',
+   hotspot: {left:28, top:28, width:40, height:42},
+   objects:[]},
+  {id:4, targetKey:'yeşil', targetShape:'top',
+   targetShapeNameTR:'Top', targetShapeNameEN:'Ball',
+   roomTR:'Bahçe', roomEN:'Garden',
+   bgImage: 'L4_SCENE', objImage: 'L4_OBJ',
+   hotspot: {left:33, top:46, width:26, height:26},
+   objects:[]},
+  {id:5, targetKey:'mor', targetShape:'yastık',
+   targetShapeNameTR:'Yastık', targetShapeNameEN:'Pillow',
+   roomTR:'Oturma Odası', roomEN:'Living Room', adAfter:true,
+   bgImage: 'L5_SCENE', objImage: 'L5_OBJ',
+   hotspot: {left:38, top:18, width:24, height:16},
+   objects:[]},
+  {id:6, targetKey:'turuncu', targetShape:'kalem',
+   targetShapeNameTR:'Kalem', targetShapeNameEN:'Pencil',
+   roomTR:'Sınıf', roomEN:'Classroom',
+   bgImage: 'L6_SCENE', objImage: 'L6_OBJ',
+   hotspot: {left:33, top:35, width:35, height:13},
+   objects:[]},
+  {id:7, targetKey:'beyaz', targetShape:'çorap',
+   targetShapeNameTR:'Çorap', targetShapeNameEN:'Sock',
+   roomTR:'Yatak Odası', roomEN:'Bedroom',
+   bgImage: 'L7_SCENE', objImage: 'L7_OBJ',
+   hotspot: {left:44, top:87, width:10, height:11},
+   objects:[]},
+  {id:8, targetKey:'siyah', targetShape:'tava',
+   targetShapeNameTR:'Tava', targetShapeNameEN:'Pan',
+   roomTR:'Mutfak', roomEN:'Kitchen',
+   bgImage: 'L8_SCENE', objImage: 'L8_OBJ',
+   hotspot: {left:27, top:50, width:53, height:46},
+   objects:[]},
+  {id:9, targetKey:'kahverengi', targetShape:'kova',
+   targetShapeNameTR:'Kova', targetShapeNameEN:'Bucket',
+   roomTR:'Çocuk Parkı', roomEN:'Playground',
+   bgImage: 'L9_SCENE', objImage: 'L9_OBJ',
+   hotspot: {left:33, top:27, width:33, height:56},
+   objects:[]},
+  {id:10, targetKey:'pembe', targetShape:'silgi',
+   targetShapeNameTR:'Silgi', targetShapeNameEN:'Eraser',
+   roomTR:'Sınıf', roomEN:'Classroom',
+   bgImage: 'L10_SCENE', objImage: 'L10_OBJ',
+   hotspot: {left:60, top:41, width:16, height:16},
+   objects:[]},
+  {id:11, targetKey:'mavi', targetShape:'sabun',
+   targetShapeNameTR:'Sabun', targetShapeNameEN:'Soap',
+   roomTR:'Banyo', roomEN:'Bathroom',
+   bgImage: 'L11_SCENE', objImage: 'L11_OBJ',
+   hotspot: {left:29, top:51, width:20, height:23},
+   objects:[]},
+  {id:12, targetKey:'kırmızı', targetShape:'araba',
+   targetShapeNameTR:'Araba', targetShapeNameEN:'Car',
+   roomTR:'Oturma Odası', roomEN:'Living Room', adAfter:true,
+   bgImage: 'L12_SCENE', objImage: 'L12_OBJ',
+   hotspot: {left:41, top:48, width:26, height:29},
+   objects:[]},
+  {id:13, targetKey:'yeşil', targetShape:'sulama_kabi',
+   targetShapeNameTR:'Sulama Kabı', targetShapeNameEN:'Watering Can',
+   roomTR:'Bahçe', roomEN:'Garden',
+   bgImage: 'L13_SCENE', objImage: 'L13_OBJ',
+   hotspot: {left:46, top:67, width:24, height:31},
+   objects:[]},
+  {id:14, targetKey:'sarı', targetShape:'muz',
+   targetShapeNameTR:'Muz', targetShapeNameEN:'Banana',
+   roomTR:'Mutfak', roomEN:'Kitchen',
+   bgImage: 'L14_SCENE', objImage: 'L14_OBJ',
+   hotspot: {left:14, top:68, width:20, height:16},
+   objects:[]},
+  {id:15, targetKey:'mor', targetShape:'lego',
+   targetShapeNameTR:'Lego', targetShapeNameEN:'Lego',
+   roomTR:'Çocuk Odası', roomEN:'Kids Room',
+   bgImage: 'L15_SCENE', objImage: 'L15_OBJ',
+   hotspot: {left:53, top:27, width:20, height:14},
+   objects:[]},
+  {id:16, targetKey:'turuncu', targetShape:'portakal',
+   targetShapeNameTR:'Portakal', targetShapeNameEN:'Orange',
+   roomTR:'Mutfak', roomEN:'Kitchen', adAfter:true,
+   bgImage: 'L16_SCENE', objImage: 'L16_OBJ',
+   hotspot: {left:32, top:29, width:34, height:34},
+   objects:[]},
+  {id:17, targetKey:'yeşil', targetShape:'sampuan',
+   targetShapeNameTR:'Şampuan', targetShapeNameEN:'Shampoo',
+   roomTR:'Banyo', roomEN:'Bathroom',
+   bgImage: 'L17_SCENE', objImage: 'L17_OBJ',
+   hotspot: {left:37, top:38, width:26, height:41},
+   objects:[]},
+  {id:13, targetKey:'yeşil', targetShape:'kova', roomTR:'Bahçe', roomEN:'Garden',
+   objects:[
+     {shape:'kova',   colorKey:'yeşil',    nameTR:'Sulama Kabı',nameEN:'Watering Can'},
+     {shape:'çiçek',  colorKey:'pembe',    nameTR:'Çiçek',    nameEN:'Flower'},
+     {shape:'top',    colorKey:'turuncu',  nameTR:'Top',      nameEN:'Ball'},
+     {shape:'şapka',  colorKey:'sarı',     nameTR:'Şapka',    nameEN:'Hat'},
+   ]},
+  {id:14, targetKey:'sarı', targetShape:'muz', roomTR:'Mutfak', roomEN:'Kitchen',
+   objects:[
+     {shape:'muz',    colorKey:'sarı',     nameTR:'Muz',      nameEN:'Banana'},
+     {shape:'elma',   colorKey:'kırmızı',  nameTR:'Elma',     nameEN:'Apple'},
+     {shape:'tava',   colorKey:'siyah',    nameTR:'Tava',     nameEN:'Pan'},
+     {shape:'portakal',colorKey:'turuncu', nameTR:'Portakal', nameEN:'Orange'},
+   ]},
+  {id:15, targetKey:'mor', targetShape:'top', roomTR:'Çocuk Odası', roomEN:'Kids Room', adAfter:true,
+   objects:[
+     {shape:'top',    colorKey:'mor',      nameTR:'Top',      nameEN:'Ball'},
+     {shape:'araba',  colorKey:'kırmızı',  nameTR:'Araba',    nameEN:'Car'},
+     {shape:'ayıcık', colorKey:'sarı',     nameTR:'Ayıcık',   nameEN:'Teddy Bear'},
+     {shape:'kalem',  colorKey:'mavi',     nameTR:'Kalem',    nameEN:'Pencil'},
+   ]},
+
+  // ===== FAZ 2: ORTA (16-35) =====
+  {id:16, targetKey:'turuncu', targetShape:'portakal', roomTR:'Mutfak', roomEN:'Kitchen',
+   objects:[
+     {shape:'portakal',colorKey:'turuncu', nameTR:'Portakal', nameEN:'Orange'},
+     {shape:'muz',     colorKey:'sarı',   nameTR:'Muz',      nameEN:'Banana'},
+     {shape:'tava',    colorKey:'siyah',  nameTR:'Tava',     nameEN:'Pan'},
+     {shape:'bardak',  colorKey:'beyaz',  nameTR:'Bardak',   nameEN:'Cup'},
+     {shape:'limon',   colorKey:'yeşil',  nameTR:'Limon',    nameEN:'Lime'},
+   ]},
+  {id:17, targetKey:'yeşil', targetShape:'şampuan', roomTR:'Banyo', roomEN:'Bathroom',
+   objects:[
+     {shape:'şampuan',    colorKey:'yeşil',   nameTR:'Şampuan',     nameEN:'Shampoo'},
+     {shape:'diş_fırçası',colorKey:'kırmızı', nameTR:'Diş Fırçası', nameEN:'Toothbrush'},
+     {shape:'sabun',      colorKey:'pembe',   nameTR:'Sabun',       nameEN:'Soap'},
+     {shape:'bardak',     colorKey:'sarı',    nameTR:'Bardak',      nameEN:'Cup'},
+     {shape:'kova',       colorKey:'mavi',    nameTR:'Kova',        nameEN:'Bucket'},
+   ]},
+  {id:18, targetKey:'mavi', targetShape:'kitap',
+   targetShapeNameTR:'Kitap', targetShapeNameEN:'Book',
+   roomTR:'Kütüphane', roomEN:'Library',
+   bgImage: 'L18_SCENE', objImage: 'L18_OBJ',
+   hotspot: {left:35, top:40, width:22, height:35},
+   objects:[]},
+  {id:19, targetKey:'kırmızı', targetShape:'çiçek',
+   targetShapeNameTR:'Gül', targetShapeNameEN:'Rose',
+   roomTR:'Bahçe', roomEN:'Garden',
+   bgImage: 'L19_SCENE', objImage: 'L19_OBJ',
+   hotspot: {left:46, top:17, width:6, height:8},
+   objects:[]},
+  {id:20, targetKey:'sarı', targetShape:'kitap', adAfter:true,
+   targetShapeNameTR:'Defter', targetShapeNameEN:'Notebook',
+   roomTR:'Sınıf', roomEN:'Classroom',
+   bgImage: 'L20_SCENE', objImage: 'L20_OBJ',
+   hotspot: {left:46, top:7, width:15, height:22},
+   objects:[]},
+  {id:21, targetKey:'siyah', targetShape:'gözlük',
+   targetShapeNameTR:'Saç Tokası', targetShapeNameEN:'Hair Clip',
+   roomTR:'Yatak Odası', roomEN:'Bedroom',
+   bgImage: 'L21_SCENE', objImage: 'L21_OBJ',
+   hotspot: {left:38, top:52, width:18, height:12},
+   objects:[]},
+  {id:22, targetKey:'pembe', targetShape:'top',
+   targetShapeNameTR:'Top', targetShapeNameEN:'Ball',
+   roomTR:'Park', roomEN:'Park',
+   bgImage: 'L22_SCENE', objImage: 'L22_OBJ',
+   hotspot: {left:44, top:77, width:7, height:17},
+   objects:[]},
+  {id:23, targetKey:'beyaz', targetShape:'bardak',
+   targetShapeNameTR:'Fincan', targetShapeNameEN:'Cup',
+   roomTR:'Mutfak', roomEN:'Kitchen',
+   bgImage: 'L23_SCENE', objImage: 'L23_OBJ',
+   hotspot: {left:42, top:38, width:16, height:8},
+   objects:[]},
+  {id:24, targetKey:'kahverengi', targetShape:'kitap',
+   targetShapeNameTR:'Kitap', targetShapeNameEN:'Book',
+   roomTR:'Oturma Odası', roomEN:'Living Room',
+   bgImage: 'L24_SCENE', objImage: 'L24_OBJ',
+   hotspot: {left:36, top:62, width:24, height:15},
+   objects:[]},
+  {id:25, targetKey:'mor', targetShape:'vazo', adAfter:true,
+   targetShapeNameTR:'Balon', targetShapeNameEN:'Balloon',
+   roomTR:'Çocuk Odası', roomEN:'Kids Room',
+   bgImage: 'L25_SCENE', objImage: 'L25_OBJ',
+   hotspot: {left:38, top:12, width:24, height:28},
+   objects:[]},
+  {id:26, targetKey:'turuncu', targetShape:'çiçek',
+   targetShapeNameTR:'Çiçek', targetShapeNameEN:'Flower',
+   roomTR:'Bahçe', roomEN:'Garden',
+   bgImage: 'L26_SCENE', objImage: 'L26_OBJ',
+   hotspot: {left:44, top:68, width:14, height:16},
+   objects:[]},
+  {id:27, targetKey:'yeşil', targetShape:'harita',
+   targetShapeNameTR:'Harita', targetShapeNameEN:'Map',
+   roomTR:'Sınıf', roomEN:'Classroom',
+   bgImage: 'L27_SCENE', objImage: 'L27_OBJ',
+   hotspot: {left:8, top:10, width:55, height:42},
+   objects:[]},
+  {id:28, targetKey:'açık mavi', targetShape:'diş_fırçası',
+   targetShapeNameTR:'Diş Macunu', targetShapeNameEN:'Toothpaste',
+   roomTR:'Banyo', roomEN:'Bathroom',
+   bgImage: 'L28_SCENE', objImage: 'L28_OBJ',
+   hotspot: {left:52, top:34, width:16, height:20},
+   objects:[]},
+  {id:29, targetKey:'siyah', targetShape:'gözlük',
+   targetShapeNameTR:'Güneş Gözlüğü', targetShapeNameEN:'Sunglasses',
+   roomTR:'Yatak Odası', roomEN:'Bedroom',
+   bgImage: 'L29_SCENE', objImage: 'L29_OBJ',
+   hotspot: {left:43, top:43, width:10, height:5},
+   objects:[]},
+  {id:30, targetKey:'kırmızı', targetShape:'şapka', adAfter:true,
+   targetShapeNameTR:'Şapka', targetShapeNameEN:'Cap',
+   roomTR:'Park', roomEN:'Park',
+   bgImage: 'L30_SCENE', objImage: 'L30_OBJ',
+   hotspot: {left:36, top:55, width:22, height:18},
+   objects:[]},
+  {id:31, targetKey:'sarı', targetShape:'limon',
+   targetShapeNameTR:'Limon', targetShapeNameEN:'Lemon',
+   roomTR:'Mutfak', roomEN:'Kitchen',
+   bgImage: 'L31_SCENE', objImage: 'L31_OBJ',
+   hotspot: {left:40, top:48, width:22, height:18},
+   objects:[]},
+  {id:32, targetKey:'mor', targetShape:'vazo',
+   targetShapeNameTR:'Vazo', targetShapeNameEN:'Vase',
+   roomTR:'Oturma Odası', roomEN:'Living Room',
+   bgImage: 'L32_SCENE', objImage: 'L32_OBJ',
+   hotspot: {left:38, top:48, width:24, height:38},
+   objects:[]},
+  {id:33, targetKey:'yeşil', targetShape:'araba',
+   targetShapeNameTR:'Araba', targetShapeNameEN:'Car',
+   roomTR:'Çocuk Odası', roomEN:'Kids Room',
+   bgImage: 'L33_SCENE', objImage: 'L33_OBJ',
+   hotspot: {left:28, top:42, width:46, height:43},
+   objects:[]},
+  {id:34, targetKey:'beyaz', targetShape:'çiçek',
+   targetShapeNameTR:'Papatya', targetShapeNameEN:'Daisy',
+   roomTR:'Orman', roomEN:'Forest',
+   bgImage: 'L34_SCENE', objImage: 'L34_OBJ',
+   hotspot: {left:34, top:32, width:34, height:30},
+   objects:[]},
+  {id:35, targetKey:'kahverengi', targetShape:'ayakkabı', adAfter:true,
+   targetShapeNameTR:'Ayakkabı', targetShapeNameEN:'Shoe',
+   roomTR:'Banyo', roomEN:'Bathroom',
+   bgImage: 'L35_SCENE', objImage: 'L35_OBJ',
+   hotspot: {left:28, top:52, width:44, height:32},
+   objects:[]},
+
+  // ===== FAZ 3: ZOR (36-55) =====
+  {id:36, targetKey:'kahverengi', targetShape:'kavanoz',
+   targetShapeNameTR:'Tarçın Kavanozu', targetShapeNameEN:'Cinnamon Jar',
+   roomTR:'Mutfak', roomEN:'Kitchen',
+   bgImage: 'L36_SCENE', objImage: 'L36_OBJ',
+   hotspot: {left:32, top:28, width:36, height:52},
+   objects:[]},
+  {id:37, targetKey:'koyu mavi', targetShape:'havlu',
+   targetShapeNameTR:'Havlu', targetShapeNameEN:'Towel',
+   roomTR:'Sınıf', roomEN:'Classroom',
+   bgImage: 'L37_SCENE', objImage: 'L37_OBJ',
+   hotspot: {left:20, top:55, width:60, height:38},
+   objects:[]},
+  {id:38, targetKey:'koyu yeşil', targetShape:'saksı',
+   targetShapeNameTR:'Saksı', targetShapeNameEN:'Pot',
+   roomTR:'Oturma Odası', roomEN:'Living Room',
+   bgImage: 'L38_SCENE', objImage: 'L38_OBJ',
+   hotspot: {left:42, top:55, width:28, height:42},
+   objects:[]},
+  {id:39, targetKey:'koyu kırmızı', targetShape:'böcek',
+   targetShapeNameTR:'Böcek', targetShapeNameEN:'Beetle',
+   roomTR:'Bahçe', roomEN:'Garden',
+   bgImage: 'L39_SCENE', objImage: 'L39_OBJ',
+   hotspot: {left:30, top:22, width:42, height:42},
+   objects:[]},
+  {id:40, targetKey:'sarı', targetShape:'kalem', adAfter:true,
+   targetShapeNameTR:'Kalem', targetShapeNameEN:'Pencil',
+   roomTR:'Sınıf', roomEN:'Classroom',
+   bgImage: 'L40_SCENE', objImage: 'L40_OBJ',
+   hotspot: {left:44, top:43, width:8, height:42},
+   objects:[]},
+  {id:41, targetKey:'mor', targetShape:'kazak',
+   targetShapeNameTR:'Kazak', targetShapeNameEN:'Sweater',
+   roomTR:'Yatak Odası', roomEN:'Bedroom',
+   bgImage: 'L41_SCENE', objImage: 'L41_OBJ',
+   hotspot: {left:19, top:58, width:25, height:18},
+   objects:[]},
+  {id:42, targetKey:'koyu pembe', targetShape:'yastık',
+   targetShapeNameTR:'Yastık', targetShapeNameEN:'Pillow',
+   roomTR:'Park', roomEN:'Park',
+   bgImage: 'L42_SCENE', objImage: 'L42_OBJ',
+   hotspot: {left:28, top:45, width:42, height:35},
+   objects:[]},
+  {id:43, targetKey:'koyu gri', targetShape:'kavanoz',
+   targetShapeNameTR:'Kavanoz', targetShapeNameEN:'Jar',
+   roomTR:'Mutfak', roomEN:'Kitchen',
+   bgImage: 'L43_SCENE', objImage: 'L43_OBJ',
+   hotspot: {left:36, top:20, width:22, height:56},
+   objects:[]},
+  {id:44, targetKey:'mor', targetShape:'klasör',
+   targetShapeNameTR:'Klasör', targetShapeNameEN:'Folder',
+   roomTR:'Çalışma Odası', roomEN:'Study Room',
+   bgImage: 'L44_SCENE', objImage: 'L44_OBJ',
+   hotspot: {left:34, top:31, width:28, height:57},
+   objects:[]},
+  {id:45, targetKey:'koyu turuncu', targetShape:'robot', roomTR:'Çocuk Odası', roomEN:'Kids Room', adAfter:true,
+   targetShapeNameTR:'Robot', targetShapeNameEN:'Robot',
+   bgImage: 'L45_SCENE', objImage: 'L45_OBJ',
+   hotspot: {left:28, top:18, width:44, height:65},
+   objects:[
+     {shape:'robot',  colorKey:'koyu turuncu', nameTR:'Robot',    nameEN:'Robot'},
+     {shape:'araba',  colorKey:'mavi',         nameTR:'Araba',    nameEN:'Car'},
+     {shape:'top',    colorKey:'kırmızı',      nameTR:'Top',      nameEN:'Ball'},
+     {shape:'yapboz', colorKey:'yeşil',        nameTR:'Yapboz',   nameEN:'Puzzle'},
+     {shape:'ayıcık', colorKey:'sarı',         nameTR:'Ayıcık',   nameEN:'Teddy Bear'},
+     {shape:'kalem',  colorKey:'mor',          nameTR:'Kalem',    nameEN:'Pencil'},
+     {shape:'yastık', colorKey:'pembe',        nameTR:'Yastık',   nameEN:'Pillow'},
+     {shape:'bardak', colorKey:'kahverengi',   nameTR:'Bardak',   nameEN:'Cup'},
+   ]},
+  {id:46, targetKey:'sarı', targetShape:'kuş', roomTR:'Bahçe', roomEN:'Garden',
+   targetShapeNameTR:'Kuş', targetShapeNameEN:'Bird',
+   bgImage: 'L46_SCENE', objImage: 'L46_OBJ',
+   hotspot: {left:30, top:28, width:38, height:38},
+   objects:[
+     {shape:'kelebek',colorKey:'koyu kahverengi',nameTR:'Kuş',   nameEN:'Bird'},
+     {shape:'çiçek',  colorKey:'kırmızı',       nameTR:'Çiçek',  nameEN:'Flower'},
+     {shape:'limon',  colorKey:'sarı',           nameTR:'Limon',  nameEN:'Lemon'},
+     {shape:'top',    colorKey:'mavi',           nameTR:'Top',    nameEN:'Ball'},
+     {shape:'kova',   colorKey:'yeşil',          nameTR:'Kova',   nameEN:'Bucket'},
+     {shape:'solucan',colorKey:'mor',            nameTR:'Solucan',nameEN:'Worm'},
+     {shape:'şapka',  colorKey:'turuncu',        nameTR:'Şapka',  nameEN:'Hat'},
+     {shape:'elma',   colorKey:'pembe',          nameTR:'Elma',   nameEN:'Apple'},
+   ]},
+  {id:47, targetKey:'koyu yeşil', targetShape:'saat', roomTR:'Sınıf', roomEN:'Classroom',
+   targetShapeNameTR:'Saat', targetShapeNameEN:'Clock',
+   bgImage: 'L47_SCENE', objImage: 'L47_OBJ',
+   hotspot: {left:44, top:3,  width:14, height:12},
+   objects:[
+     {shape:'silgi',  colorKey:'koyu yeşil',    nameTR:'Silgi',    nameEN:'Eraser'},
+     {shape:'kalem',  colorKey:'sarı',          nameTR:'Kalem',    nameEN:'Pencil'},
+     {shape:'kitap',  colorKey:'kırmızı',       nameTR:'Kitap',    nameEN:'Book'},
+     {shape:'bardak', colorKey:'mavi',          nameTR:'Bardak',   nameEN:'Cup'},
+     {shape:'şapka',  colorKey:'mor',           nameTR:'Şapka',    nameEN:'Hat'},
+     {shape:'klasör', colorKey:'turuncu',       nameTR:'Klasör',   nameEN:'Folder'},
+     {shape:'çanta',  colorKey:'kahverengi',    nameTR:'Çanta',    nameEN:'Bag'},
+     {shape:'top',    colorKey:'pembe',         nameTR:'Top',      nameEN:'Ball'},
+   ]},
+  {id:48, targetKey:'lacivert', targetShape:'paspas', roomTR:'Banyo', roomEN:'Bathroom',
+   targetShapeNameTR:'Paspas', targetShapeNameEN:'Mat',
+   bgImage: 'L48_SCENE', objImage: 'L48_OBJ',
+   hotspot: {left:34, top:56, width:30, height:22},
+   objects:[
+     {shape:'şampuan',    colorKey:'koyu mavi',  nameTR:'Şampuan',    nameEN:'Shampoo'},
+     {shape:'diş_fırçası',colorKey:'kırmızı',    nameTR:'Fırça',      nameEN:'Brush'},
+     {shape:'sabun',      colorKey:'sarı',       nameTR:'Sabun',      nameEN:'Soap'},
+     {shape:'kova',       colorKey:'yeşil',      nameTR:'Kova',       nameEN:'Bucket'},
+     {shape:'bardak',     colorKey:'mor',        nameTR:'Bardak',     nameEN:'Cup'},
+     {shape:'kavanoz',    colorKey:'turuncu',    nameTR:'Kavanoz',    nameEN:'Jar'},
+     {shape:'silgi',      colorKey:'pembe',      nameTR:'Sünger',     nameEN:'Sponge'},
+     {shape:'top',        colorKey:'kahverengi', nameTR:'Top',        nameEN:'Ball'},
+   ]},
+  {id:49, targetKey:'kırmızı', targetShape:'laptop', roomTR:'Yatak Odası', roomEN:'Bedroom',
+   targetShapeNameTR:'Bilgisayar', targetShapeNameEN:'Laptop',
+   bgImage: 'L49_SCENE', objImage: 'L49_OBJ',
+   hotspot: {left:28, top:42, width:42, height:28},
+   objects:[
+     {shape:'gözlük', colorKey:'siyah',         nameTR:'Gözlük',   nameEN:'Glasses'},
+     {shape:'çorap',  colorKey:'kırmızı',       nameTR:'Çorap',    nameEN:'Sock'},
+     {shape:'şapka',  colorKey:'mavi',          nameTR:'Şapka',    nameEN:'Hat'},
+     {shape:'kitap',  colorKey:'sarı',          nameTR:'Kitap',    nameEN:'Book'},
+     {shape:'ayakkabı',colorKey:'kahverengi',   nameTR:'Ayakkabı', nameEN:'Shoe'},
+     {shape:'çanta',  colorKey:'mor',           nameTR:'Çanta',    nameEN:'Bag'},
+     {shape:'silgi',  colorKey:'yeşil',         nameTR:'Silgi',    nameEN:'Eraser'},
+     {shape:'kalem',  colorKey:'turuncu',       nameTR:'Kalem',    nameEN:'Pencil'},
+   ]},
+  {id:50, targetKey:'kırmızı', targetShape:'şişe', roomTR:'Çocuk Odası – KAOS', roomEN:'Kids Room – CHAOS', adAfter:true,
+   targetShapeNameTR:'Şişe', targetShapeNameEN:'Bottle',
+   bgImage: 'L50_SCENE', objImage: 'L50_OBJ',
+   hotspot: {left:38, top:40, width:18, height:32},
+   objects:[
+     {shape:'bardak', colorKey:'kırmızı',       nameTR:'Şişe',     nameEN:'Bottle'},
+     {shape:'araba',  colorKey:'mavi',          nameTR:'Araba',    nameEN:'Car'},
+     {shape:'yapboz', colorKey:'sarı',          nameTR:'Yapboz',   nameEN:'Puzzle'},
+     {shape:'robot',  colorKey:'yeşil',         nameTR:'Robot',    nameEN:'Robot'},
+     {shape:'top',    colorKey:'mor',           nameTR:'Top',      nameEN:'Ball'},
+     {shape:'ayıcık', colorKey:'turuncu',       nameTR:'Ayıcık',   nameEN:'Teddy Bear'},
+     {shape:'kalem',  colorKey:'siyah',         nameTR:'Kalem',    nameEN:'Pencil'},
+     {shape:'kitap',  colorKey:'beyaz',         nameTR:'Kitap',    nameEN:'Book'},
+     {shape:'yastık', colorKey:'açık mavi',     nameTR:'Yastık',   nameEN:'Pillow'},
+     {shape:'şapka',  colorKey:'pembe',         nameTR:'Şapka',    nameEN:'Hat'},
+     {shape:'silgi',  colorKey:'kahverengi',    nameTR:'Silgi',    nameEN:'Eraser'},
+     {shape:'kova',   colorKey:'gri',           nameTR:'Kova',     nameEN:'Bucket'},
+   ]},
+  {id:51, targetKey:'turuncu', targetShape:'kuş', roomTR:'Park', roomEN:'Park',
+   targetShapeNameTR:'Kuş', targetShapeNameEN:'Bird',
+   bgImage: 'L51_SCENE', objImage: 'L51_OBJ',
+   hotspot: {left:30, top:30, width:40, height:40},
+   objects:[
+     {shape:'top',    colorKey:'koyu turuncu',  nameTR:'Top',      nameEN:'Ball'},
+     {shape:'kelebek',colorKey:'mavi',          nameTR:'Kelebek',  nameEN:'Butterfly'},
+     {shape:'şapka',  colorKey:'sarı',          nameTR:'Şapka',    nameEN:'Hat'},
+     {shape:'çiçek',  colorKey:'kırmızı',       nameTR:'Çiçek',    nameEN:'Flower'},
+     {shape:'kova',   colorKey:'yeşil',         nameTR:'Kova',     nameEN:'Bucket'},
+     {shape:'solucan',colorKey:'kahverengi',    nameTR:'Solucan',  nameEN:'Worm'},
+     {shape:'limon',  colorKey:'mor',           nameTR:'Meyve',    nameEN:'Fruit'},
+     {shape:'elma',   colorKey:'pembe',         nameTR:'Elma',     nameEN:'Apple'},
+   ]},
+  {id:52, targetKey:'yeşil', targetShape:'bıçak', roomTR:'Mutfak', roomEN:'Kitchen',
+   targetShapeNameTR:'Bıçak', targetShapeNameEN:'Knife',
+   bgImage: 'L52_SCENE', objImage: 'L52_OBJ',
+   hotspot: {left:30, top:30, width:40, height:40},
+   objects:[
+     {shape:'tava',   colorKey:'koyu yeşil',    nameTR:'Tava',     nameEN:'Pan'},
+     {shape:'muz',    colorKey:'sarı',          nameTR:'Muz',      nameEN:'Banana'},
+     {shape:'elma',   colorKey:'kırmızı',       nameTR:'Elma',     nameEN:'Apple'},
+     {shape:'bardak', colorKey:'mavi',          nameTR:'Bardak',   nameEN:'Cup'},
+     {shape:'kavanoz',colorKey:'turuncu',       nameTR:'Kavanoz',  nameEN:'Jar'},
+     {shape:'limon',  colorKey:'pembe',         nameTR:'Meyve',    nameEN:'Fruit'},
+     {shape:'portakal',colorKey:'kahverengi',   nameTR:'Portakal', nameEN:'Orange'},
+     {shape:'kepçe',  colorKey:'gri',           nameTR:'Kepçe',    nameEN:'Ladle'},
+   ]},
+  {id:53, targetKey:'mor', targetShape:'telefon', roomTR:'Sınıf', roomEN:'Classroom',
+   targetShapeNameTR:'Telefon', targetShapeNameEN:'Phone',
+   bgImage: 'L53_SCENE', objImage: 'L53_OBJ',
+   hotspot: {left:30, top:30, width:40, height:40},
+   objects:[
+     {shape:'klasör', colorKey:'koyu mor',      nameTR:'Klasör',   nameEN:'Folder'},
+     {shape:'kalem',  colorKey:'kırmızı',       nameTR:'Kalem',    nameEN:'Pencil'},
+     {shape:'kitap',  colorKey:'sarı',          nameTR:'Kitap',    nameEN:'Book'},
+     {shape:'silgi',  colorKey:'mavi',          nameTR:'Silgi',    nameEN:'Eraser'},
+     {shape:'çanta',  colorKey:'turuncu',       nameTR:'Çanta',    nameEN:'Bag'},
+     {shape:'harita', colorKey:'yeşil',         nameTR:'Harita',   nameEN:'Map'},
+     {shape:'bardak', colorKey:'kahverengi',    nameTR:'Bardak',   nameEN:'Cup'},
+     {shape:'şapka',  colorKey:'pembe',         nameTR:'Şapka',    nameEN:'Hat'},
+   ]},
+  {id:54, targetKey:'kahverengi', targetShape:'taş', roomTR:'Bahçe', roomEN:'Garden',
+   targetShapeNameTR:'Taş', targetShapeNameEN:'Stone',
+   bgImage: 'L54_SCENE', objImage: 'L54_OBJ',
+   hotspot: {left:30, top:30, width:40, height:40},
+   objects:[
+     {shape:'kova',   colorKey:'koyu kahverengi',nameTR:'Taş',     nameEN:'Stone'},
+     {shape:'çiçek',  colorKey:'kırmızı',        nameTR:'Çiçek',   nameEN:'Flower'},
+     {shape:'limon',  colorKey:'sarı',           nameTR:'Limon',   nameEN:'Lemon'},
+     {shape:'kelebek',colorKey:'mavi',           nameTR:'Kelebek', nameEN:'Butterfly'},
+     {shape:'top',    colorKey:'yeşil',          nameTR:'Top',     nameEN:'Ball'},
+     {shape:'solucan',colorKey:'mor',            nameTR:'Solucan', nameEN:'Worm'},
+     {shape:'şapka',  colorKey:'turuncu',        nameTR:'Şapka',   nameEN:'Hat'},
+     {shape:'elma',   colorKey:'pembe',          nameTR:'Elma',    nameEN:'Apple'},
+   ]},
+  {id:55, targetKey:'pembe', targetShape:'çanta', roomTR:'Okul', roomEN:'School', adAfter:true,
+   targetShapeNameTR:'Çanta', targetShapeNameEN:'Bag',
+   bgImage: 'L55_SCENE', objImage: 'L55_OBJ',
+   hotspot: {left:30, top:30, width:40, height:40},
+   objects:[
+     {shape:'çanta',  colorKey:'koyu pembe',     nameTR:'Çanta',    nameEN:'Bag'},
+     {shape:'kitap',  colorKey:'mavi',           nameTR:'Kitap',    nameEN:'Book'},
+     {shape:'kalem',  colorKey:'sarı',           nameTR:'Kalem',    nameEN:'Pencil'},
+     {shape:'silgi',  colorKey:'kırmızı',        nameTR:'Silgi',    nameEN:'Eraser'},
+     {shape:'bardak', colorKey:'yeşil',          nameTR:'Bardak',   nameEN:'Cup'},
+     {shape:'ayakkabı',colorKey:'kahverengi',    nameTR:'Ayakkabı', nameEN:'Shoe'},
+     {shape:'klasör', colorKey:'turuncu',        nameTR:'Klasör',   nameEN:'Folder'},
+     {shape:'şapka',  colorKey:'mor',            nameTR:'Şapka',    nameEN:'Hat'},
+   ]},
+
+  // ===== FAZ 4: UZMAN (56-75) =====
+  {id:56, targetKey:'yeşil', targetShape:'üzüm', roomTR:'Mutfak', roomEN:'Kitchen',
+   targetShapeNameTR:'Üzüm', targetShapeNameEN:'Grape',
+   bgImage: 'L56_SCENE', objImage: 'L56_OBJ',
+   hotspot: {left:30, top:30, width:40, height:40},
+   objects:[
+     {shape:'elma',   colorKey:'açık yeşil',    nameTR:'Elma',     nameEN:'Apple'},
+     {shape:'portakal',colorKey:'turuncu',      nameTR:'Portakal', nameEN:'Orange'},
+     {shape:'muz',    colorKey:'sarı',          nameTR:'Muz',      nameEN:'Banana'},
+     {shape:'tava',   colorKey:'siyah',         nameTR:'Tava',     nameEN:'Pan'},
+     {shape:'kavanoz',colorKey:'kahverengi',    nameTR:'Kavanoz',  nameEN:'Jar'},
+     {shape:'bardak', colorKey:'beyaz',         nameTR:'Bardak',   nameEN:'Cup'},
+     {shape:'limon',  colorKey:'kırmızı',       nameTR:'Limon',    nameEN:'Lemon'},
+     {shape:'şampuan',colorKey:'mavi',          nameTR:'Şampuan',  nameEN:'Shampoo'},
+     {shape:'kepçe',  colorKey:'gri',           nameTR:'Kepçe',    nameEN:'Ladle'},
+   ]},
+  {id:57, targetKey:'beyaz', targetShape:'ördek', roomTR:'Banyo', roomEN:'Bathroom',
+   targetShapeNameTR:'Ördek', targetShapeNameEN:'Duck',
+   bgImage: 'L57_SCENE', objImage: 'L57_OBJ',
+   hotspot: {left:30, top:30, width:40, height:40},
+   objects:[
+     {shape:'köpük_ördek',colorKey:'beyaz',     nameTR:'Ördek',    nameEN:'Duck'},
+     {shape:'şampuan',    colorKey:'mavi',      nameTR:'Şampuan',  nameEN:'Shampoo'},
+     {shape:'sabun',      colorKey:'kırmızı',   nameTR:'Sabun',    nameEN:'Soap'},
+     {shape:'diş_fırçası',colorKey:'sarı',      nameTR:'Fırça',    nameEN:'Brush'},
+     {shape:'kova',       colorKey:'yeşil',     nameTR:'Kova',     nameEN:'Bucket'},
+     {shape:'bardak',     colorKey:'turuncu',   nameTR:'Bardak',   nameEN:'Cup'},
+     {shape:'kavanoz',    colorKey:'mor',       nameTR:'Kavanoz',  nameEN:'Jar'},
+     {shape:'silgi',      colorKey:'pembe',     nameTR:'Sünger',   nameEN:'Sponge'},
+     {shape:'top',        colorKey:'siyah',     nameTR:'Top',      nameEN:'Ball'},
+   ]},
+  {id:58, targetKey:'sarı', targetShape:'heykel', roomTR:'Oturma Odası', roomEN:'Living Room',
+   targetShapeNameTR:'Heykel', targetShapeNameEN:'Statue',
+   bgImage: 'L58_SCENE', objImage: 'L58_OBJ',
+   hotspot: {left:30, top:30, width:40, height:40},
+   objects:[
+     {shape:'heykelcik',colorKey:'koyu kahverengi',nameTR:'Heykel',  nameEN:'Figurine'},
+     {shape:'kitap',    colorKey:'mavi',           nameTR:'Kitap',   nameEN:'Book'},
+     {shape:'vazo',     colorKey:'kırmızı',        nameTR:'Vazo',    nameEN:'Vase'},
+     {shape:'çiçek',    colorKey:'sarı',           nameTR:'Çiçek',   nameEN:'Flower'},
+     {shape:'yastık',   colorKey:'yeşil',          nameTR:'Yastık',  nameEN:'Pillow'},
+     {shape:'çerçeve',  colorKey:'mor',            nameTR:'Tablo',   nameEN:'Frame'},
+     {shape:'bardak',   colorKey:'turuncu',        nameTR:'Bardak',  nameEN:'Cup'},
+     {shape:'top',      colorKey:'pembe',          nameTR:'Top',     nameEN:'Ball'},
+     {shape:'kalem',    colorKey:'gri',            nameTR:'Kalem',   nameEN:'Pencil'},
+   ]},
+  {id:59, targetKey:'mavi', targetShape:'kelebek', roomTR:'Bahçe', roomEN:'Garden',
+   targetShapeNameTR:'Kelebek', targetShapeNameEN:'Butterfly',
+   bgImage: 'L59_SCENE', objImage: 'L59_OBJ',
+   hotspot: {left:30, top:30, width:40, height:40},
+   objects:[
+     {shape:'kelebek',colorKey:'koyu mavi',     nameTR:'Kelebek',  nameEN:'Butterfly'},
+     {shape:'çiçek',  colorKey:'kırmızı',       nameTR:'Çiçek',    nameEN:'Flower'},
+     {shape:'limon',  colorKey:'sarı',          nameTR:'Limon',    nameEN:'Lemon'},
+     {shape:'elma',   colorKey:'yeşil',         nameTR:'Elma',     nameEN:'Apple'},
+     {shape:'solucan',colorKey:'kahverengi',    nameTR:'Solucan',  nameEN:'Worm'},
+     {shape:'top',    colorKey:'turuncu',       nameTR:'Top',      nameEN:'Ball'},
+     {shape:'şapka',  colorKey:'mor',           nameTR:'Şapka',    nameEN:'Hat'},
+     {shape:'kova',   colorKey:'pembe',         nameTR:'Kova',     nameEN:'Bucket'},
+     {shape:'portakal',colorKey:'açık mavi',    nameTR:'Meyve',    nameEN:'Fruit'},
+   ]},
+  {id:60, targetKey:'kırmızı', targetShape:'resim', roomTR:'Sınıf', roomEN:'Classroom', adAfter:true,
+   targetShapeNameTR:'Resim', targetShapeNameEN:'Picture',
+   bgImage: 'L60_SCENE', objImage: 'L60_OBJ',
+   hotspot: {left:30, top:30, width:40, height:40},
+   objects:[
+     {shape:'çerçeve',colorKey:'koyu sarı',     nameTR:'Çizim',    nameEN:'Drawing'},
+     {shape:'kitap',  colorKey:'mavi',          nameTR:'Kitap',    nameEN:'Book'},
+     {shape:'kalem',  colorKey:'kırmızı',       nameTR:'Kalem',    nameEN:'Pencil'},
+     {shape:'silgi',  colorKey:'yeşil',         nameTR:'Silgi',    nameEN:'Eraser'},
+     {shape:'klasör', colorKey:'mor',           nameTR:'Klasör',   nameEN:'Folder'},
+     {shape:'harita', colorKey:'turuncu',       nameTR:'Harita',   nameEN:'Map'},
+     {shape:'çanta',  colorKey:'kahverengi',    nameTR:'Çanta',    nameEN:'Bag'},
+     {shape:'bardak', colorKey:'pembe',         nameTR:'Bardak',   nameEN:'Cup'},
+     {shape:'şapka',  colorKey:'gri',           nameTR:'Şapka',    nameEN:'Hat'},
+   ]},
+  {id:61, targetKey:'siyah', targetShape:'mont', roomTR:'Yatak Odası', roomEN:'Bedroom',
+   targetShapeNameTR:'Mont', targetShapeNameEN:'Coat',
+   bgImage: 'L61_SCENE', objImage: 'L61_OBJ',
+   hotspot: {left:30, top:30, width:40, height:40},
+   objects:[
+     {shape:'kitap',  colorKey:'siyah',         nameTR:'Kitap',    nameEN:'Book'},
+     {shape:'çorap',  colorKey:'kırmızı',       nameTR:'Çorap',    nameEN:'Sock'},
+     {shape:'gözlük', colorKey:'mavi',          nameTR:'Gözlük',   nameEN:'Glasses'},
+     {shape:'şapka',  colorKey:'sarı',          nameTR:'Şapka',    nameEN:'Hat'},
+     {shape:'ayakkabı',colorKey:'kahverengi',   nameTR:'Ayakkabı', nameEN:'Shoe'},
+     {shape:'çanta',  colorKey:'mor',           nameTR:'Çanta',    nameEN:'Bag'},
+     {shape:'silgi',  colorKey:'yeşil',         nameTR:'Silgi',    nameEN:'Eraser'},
+     {shape:'kalem',  colorKey:'turuncu',       nameTR:'Kalem',    nameEN:'Pencil'},
+     {shape:'yastık', colorKey:'pembe',         nameTR:'Yastık',   nameEN:'Pillow'},
+   ]},
+  {id:62, targetKey:'sarışın', targetShape:'bebek', roomTR:'Park', roomEN:'Park',
+   targetShapeNameTR:'Bebek', targetShapeNameEN:'Doll',
+   bgImage: 'L62_SCENE', objImage: 'L62_OBJ',
+   hotspot: {left:30, top:30, width:40, height:40},
+   objects:[
+     {shape:'şapka',  colorKey:'koyu pembe',    nameTR:'Şapka',    nameEN:'Hat'},
+     {shape:'kelebek',colorKey:'mavi',          nameTR:'Kelebek',  nameEN:'Butterfly'},
+     {shape:'top',    colorKey:'sarı',          nameTR:'Top',      nameEN:'Ball'},
+     {shape:'çiçek',  colorKey:'kırmızı',       nameTR:'Çiçek',    nameEN:'Flower'},
+     {shape:'kova',   colorKey:'yeşil',         nameTR:'Kova',     nameEN:'Bucket'},
+     {shape:'limon',  colorKey:'turuncu',       nameTR:'Meyve',    nameEN:'Fruit'},
+     {shape:'solucan',colorKey:'kahverengi',    nameTR:'Solucan',  nameEN:'Worm'},
+     {shape:'elma',   colorKey:'mor',           nameTR:'Elma',     nameEN:'Apple'},
+     {shape:'yastık', colorKey:'açık mavi',     nameTR:'Yastık',   nameEN:'Pillow'},
+   ]},
+  {id:63, targetKey:'kırmızı', targetShape:'biber', roomTR:'Mutfak', roomEN:'Kitchen',
+   targetShapeNameTR:'Biber', targetShapeNameEN:'Pepper',
+   bgImage: 'L63_SCENE', objImage: 'L63_OBJ',
+   hotspot: {left:30, top:30, width:40, height:40},
+   objects:[
+     {shape:'kavanoz',colorKey:'koyu gri',      nameTR:'Kavanoz',  nameEN:'Jar'},
+     {shape:'tava',   colorKey:'siyah',         nameTR:'Tava',     nameEN:'Pan'},
+     {shape:'elma',   colorKey:'kırmızı',       nameTR:'Elma',     nameEN:'Apple'},
+     {shape:'muz',    colorKey:'sarı',          nameTR:'Muz',      nameEN:'Banana'},
+     {shape:'bardak', colorKey:'mavi',          nameTR:'Bardak',   nameEN:'Cup'},
+     {shape:'limon',  colorKey:'yeşil',         nameTR:'Limon',    nameEN:'Lime'},
+     {shape:'portakal',colorKey:'turuncu',      nameTR:'Portakal', nameEN:'Orange'},
+     {shape:'şampuan',colorKey:'mor',           nameTR:'Şampuan',  nameEN:'Shampoo'},
+     {shape:'kepçe',  colorKey:'kahverengi',    nameTR:'Kepçe',    nameEN:'Ladle'},
+   ]},
+  {id:64, targetKey:'yeşil', targetShape:'yastık', roomTR:'Oturma Odası', roomEN:'Living Room',
+   targetShapeNameTR:'Yastık', targetShapeNameEN:'Pillow',
+   bgImage: 'L64_SCENE', objImage: 'L64_OBJ',
+   hotspot: {left:30, top:30, width:40, height:40},
+   objects:[
+     {shape:'yastık', colorKey:'koyu mor',      nameTR:'Yastık',   nameEN:'Pillow'},
+     {shape:'kitap',  colorKey:'mavi',          nameTR:'Kitap',    nameEN:'Book'},
+     {shape:'vazo',   colorKey:'kırmızı',       nameTR:'Vazo',     nameEN:'Vase'},
+     {shape:'çiçek',  colorKey:'sarı',          nameTR:'Çiçek',    nameEN:'Flower'},
+     {shape:'heykelcik',colorKey:'kahverengi',  nameTR:'Heykel',   nameEN:'Figurine'},
+     {shape:'çerçeve',colorKey:'yeşil',         nameTR:'Tablo',    nameEN:'Frame'},
+     {shape:'bardak', colorKey:'turuncu',       nameTR:'Bardak',   nameEN:'Cup'},
+     {shape:'top',    colorKey:'pembe',         nameTR:'Top',      nameEN:'Ball'},
+     {shape:'kalem',  colorKey:'gri',           nameTR:'Kalem',    nameEN:'Pencil'},
+   ]},
+  {id:65, targetKey:'turuncu', targetShape:'yapboz', roomTR:'Çocuk Odası', roomEN:'Kids Room', adAfter:true,
+   targetShapeNameTR:'Yapboz', targetShapeNameEN:'Puzzle',
+   bgImage: 'L65_SCENE', objImage: 'L65_OBJ',
+   hotspot: {left:30, top:30, width:40, height:40},
+   objects:[
+     {shape:'yapboz', colorKey:'koyu turuncu',  nameTR:'Yapboz',   nameEN:'Puzzle'},
+     {shape:'araba',  colorKey:'mavi',          nameTR:'Araba',    nameEN:'Car'},
+     {shape:'top',    colorKey:'kırmızı',       nameTR:'Top',      nameEN:'Ball'},
+     {shape:'robot',  colorKey:'sarı',          nameTR:'Robot',    nameEN:'Robot'},
+     {shape:'ayıcık', colorKey:'yeşil',         nameTR:'Ayıcık',   nameEN:'Teddy Bear'},
+     {shape:'kalem',  colorKey:'mor',           nameTR:'Kalem',    nameEN:'Pencil'},
+     {shape:'yastık', colorKey:'pembe',         nameTR:'Yastık',   nameEN:'Pillow'},
+     {shape:'bardak', colorKey:'kahverengi',    nameTR:'Bardak',   nameEN:'Cup'},
+     {shape:'kitap',  colorKey:'siyah',         nameTR:'Kitap',    nameEN:'Book'},
+   ]},
+  {id:66, targetKey:'yeşil', targetShape:'böcek', roomTR:'Bahçe', roomEN:'Garden',
+   targetShapeNameTR:'Böcek', targetShapeNameEN:'Bug',
+   bgImage: 'L66_SCENE', objImage: 'L66_OBJ',
+   hotspot: {left:30, top:30, width:40, height:40},
+   objects:[
+     {shape:'kelebek',colorKey:'koyu yeşil',    nameTR:'Böcek',    nameEN:'Bug'},
+     {shape:'çiçek',  colorKey:'kırmızı',       nameTR:'Çiçek',    nameEN:'Flower'},
+     {shape:'limon',  colorKey:'sarı',          nameTR:'Limon',    nameEN:'Lemon'},
+     {shape:'elma',   colorKey:'mavi',          nameTR:'Elma',     nameEN:'Apple'},
+     {shape:'kova',   colorKey:'turuncu',       nameTR:'Kova',     nameEN:'Bucket'},
+     {shape:'solucan',colorKey:'kahverengi',    nameTR:'Solucan',  nameEN:'Worm'},
+     {shape:'top',    colorKey:'mor',           nameTR:'Top',      nameEN:'Ball'},
+     {shape:'şapka',  colorKey:'pembe',         nameTR:'Şapka',    nameEN:'Hat'},
+     {shape:'portakal',colorKey:'açık mavi',    nameTR:'Meyve',    nameEN:'Fruit'},
+   ]},
+  {id:67, targetKey:'kahverengi', targetShape:'dosya', roomTR:'Sınıf', roomEN:'Classroom',
+   targetShapeNameTR:'Dosya', targetShapeNameEN:'Folder',
+   bgImage: 'L67_SCENE', objImage: 'L67_OBJ',
+   hotspot: {left:30, top:30, width:40, height:40},
+   objects:[
+     {shape:'klasör', colorKey:'koyu kahverengi',nameTR:'Dosya',   nameEN:'Folder'},
+     {shape:'kalem',  colorKey:'kırmızı',        nameTR:'Kalem',   nameEN:'Pencil'},
+     {shape:'kitap',  colorKey:'sarı',           nameTR:'Kitap',   nameEN:'Book'},
+     {shape:'silgi',  colorKey:'mavi',           nameTR:'Silgi',   nameEN:'Eraser'},
+     {shape:'çanta',  colorKey:'yeşil',          nameTR:'Çanta',   nameEN:'Bag'},
+     {shape:'harita', colorKey:'turuncu',        nameTR:'Harita',  nameEN:'Map'},
+     {shape:'şapka',  colorKey:'mor',            nameTR:'Şapka',   nameEN:'Hat'},
+     {shape:'bardak', colorKey:'pembe',          nameTR:'Bardak',  nameEN:'Cup'},
+     {shape:'top',    colorKey:'gri',            nameTR:'Top',     nameEN:'Ball'},
+   ]},
+  {id:68, targetKey:'mavi', targetShape:'fırça', roomTR:'Banyo', roomEN:'Bathroom',
+   targetShapeNameTR:'Fırça', targetShapeNameEN:'Brush',
+   bgImage: 'L68_SCENE', objImage: 'L68_OBJ',
+   hotspot: {left:30, top:30, width:40, height:40},
+   objects:[
+     {shape:'diş_fırçası',colorKey:'koyu mavi',  nameTR:'Fırça',    nameEN:'Brush'},
+     {shape:'şampuan',    colorKey:'kırmızı',    nameTR:'Şampuan',  nameEN:'Shampoo'},
+     {shape:'sabun',      colorKey:'sarı',       nameTR:'Sabun',    nameEN:'Soap'},
+     {shape:'kova',       colorKey:'yeşil',      nameTR:'Kova',     nameEN:'Bucket'},
+     {shape:'bardak',     colorKey:'turuncu',    nameTR:'Bardak',   nameEN:'Cup'},
+     {shape:'kavanoz',    colorKey:'mor',        nameTR:'Kavanoz',  nameEN:'Jar'},
+     {shape:'silgi',      colorKey:'pembe',      nameTR:'Sünger',   nameEN:'Sponge'},
+     {shape:'köpük_ördek',colorKey:'beyaz',      nameTR:'Ördek',    nameEN:'Duck'},
+     {shape:'top',        colorKey:'kahverengi', nameTR:'Top',      nameEN:'Ball'},
+   ]},
+  {id:69, targetKey:'siyah', targetShape:'şarj', roomTR:'Yatak Odası', roomEN:'Bedroom',
+   targetShapeNameTR:'Şarj', targetShapeNameEN:'Charger',
+   bgImage: 'L69_SCENE', objImage: 'L69_OBJ',
+   hotspot: {left:30, top:30, width:40, height:40},
+   objects:[
+     {shape:'çorap',  colorKey:'siyah',          nameTR:'Çorap',    nameEN:'Sock'},
+     {shape:'gözlük', colorKey:'kırmızı',        nameTR:'Gözlük',   nameEN:'Glasses'},
+     {shape:'şapka',  colorKey:'sarı',           nameTR:'Şapka',    nameEN:'Hat'},
+     {shape:'kitap',  colorKey:'mavi',           nameTR:'Kitap',    nameEN:'Book'},
+     {shape:'ayakkabı',colorKey:'kahverengi',    nameTR:'Ayakkabı', nameEN:'Shoe'},
+     {shape:'çanta',  colorKey:'mor',            nameTR:'Çanta',    nameEN:'Bag'},
+     {shape:'silgi',  colorKey:'yeşil',          nameTR:'Silgi',    nameEN:'Eraser'},
+     {shape:'kalem',  colorKey:'turuncu',        nameTR:'Kalem',    nameEN:'Pencil'},
+     {shape:'yastık', colorKey:'pembe',          nameTR:'Yastık',   nameEN:'Pillow'},
+   ]},
+  {id:70, targetKey:'kırmızı', targetShape:'palyaço', roomTR:'Sirk', roomEN:'Circus', adAfter:true,
+   targetShapeNameTR:'Palyaço', targetShapeNameEN:'Clown',
+   bgImage: 'L70_SCENE', objImage: 'L70_OBJ',
+   hotspot: {left:30, top:30, width:40, height:40},
+   objects:[
+     {shape:'palyaço',colorKey:'kırmızı',        nameTR:'Palyaço',  nameEN:'Clown'},
+     {shape:'top',    colorKey:'turuncu',        nameTR:'Top',      nameEN:'Ball'},
+     {shape:'şapka',  colorKey:'sarı',           nameTR:'Şapka',    nameEN:'Hat'},
+     {shape:'çiçek',  colorKey:'mavi',           nameTR:'Çiçek',    nameEN:'Flower'},
+     {shape:'bardak', colorKey:'mor',            nameTR:'Bardak',   nameEN:'Cup'},
+     {shape:'robot',  colorKey:'yeşil',          nameTR:'Robot',    nameEN:'Robot'},
+     {shape:'kelebek',colorKey:'sarı',           nameTR:'Kelebek',  nameEN:'Butterfly'},
+     {shape:'limon',  colorKey:'pembe',          nameTR:'Meyve',    nameEN:'Fruit'},
+     {shape:'elma',   colorKey:'kahverengi',     nameTR:'Elma',     nameEN:'Apple'},
+     {shape:'kalem',  colorKey:'siyah',          nameTR:'Kalem',    nameEN:'Pencil'},
+   ]},
+  {id:71, targetKey:'koyu turuncu', targetShape:'kuş', roomTR:'Park', roomEN:'Park',
+   targetShapeNameTR:'Kuş', targetShapeNameEN:'Bird',
+   bgImage: 'L71_SCENE', objImage: 'L71_OBJ',
+   hotspot: {left:30, top:30, width:40, height:40},
+   objects:[
+     {shape:'kelebek',colorKey:'koyu turuncu',   nameTR:'Kuş',      nameEN:'Bird'},
+     {shape:'çiçek',  colorKey:'kırmızı',        nameTR:'Çiçek',    nameEN:'Flower'},
+     {shape:'top',    colorKey:'sarı',           nameTR:'Top',      nameEN:'Ball'},
+     {shape:'kova',   colorKey:'mavi',           nameTR:'Kova',     nameEN:'Bucket'},
+     {shape:'şapka',  colorKey:'yeşil',          nameTR:'Şapka',    nameEN:'Hat'},
+     {shape:'solucan',colorKey:'kahverengi',     nameTR:'Solucan',  nameEN:'Worm'},
+     {shape:'limon',  colorKey:'mor',            nameTR:'Meyve',    nameEN:'Fruit'},
+     {shape:'elma',   colorKey:'pembe',          nameTR:'Elma',     nameEN:'Apple'},
+     {shape:'portakal',colorKey:'açık mavi',     nameTR:'Portakal', nameEN:'Orange'},
+     {shape:'yastık', colorKey:'gri',            nameTR:'Yastık',   nameEN:'Pillow'},
+   ]},
+  {id:72, targetKey:'koyu yeşil', targetShape:'kepçe', roomTR:'Mutfak', roomEN:'Kitchen',
+   targetShapeNameTR:'Kepçe', targetShapeNameEN:'Ladle',
+   bgImage: 'L72_SCENE', objImage: 'L72_OBJ',
+   hotspot: {left:30, top:30, width:40, height:40},
+   objects:[
+     {shape:'kepçe',  colorKey:'koyu yeşil',     nameTR:'Kepçe',    nameEN:'Ladle'},
+     {shape:'tava',   colorKey:'siyah',          nameTR:'Tava',     nameEN:'Pan'},
+     {shape:'muz',    colorKey:'sarı',           nameTR:'Muz',      nameEN:'Banana'},
+     {shape:'elma',   colorKey:'kırmızı',        nameTR:'Elma',     nameEN:'Apple'},
+     {shape:'bardak', colorKey:'mavi',           nameTR:'Bardak',   nameEN:'Cup'},
+     {shape:'kavanoz',colorKey:'turuncu',        nameTR:'Kavanoz',  nameEN:'Jar'},
+     {shape:'limon',  colorKey:'pembe',          nameTR:'Limon',    nameEN:'Lemon'},
+     {shape:'portakal',colorKey:'kahverengi',    nameTR:'Portakal', nameEN:'Orange'},
+     {shape:'şampuan',colorKey:'mor',            nameTR:'Şampuan',  nameEN:'Shampoo'},
+   ]},
+  {id:73, targetKey:'mor', targetShape:'çerçeve', roomTR:'Oturma Odası', roomEN:'Living Room',
+   targetShapeNameTR:'Çerçeve', targetShapeNameEN:'Frame',
+   bgImage: 'L73_SCENE', objImage: 'L73_OBJ',
+   hotspot: {left:30, top:30, width:40, height:40},
+   objects:[
+     {shape:'çerçeve',colorKey:'koyu mor',       nameTR:'Çerçeve',  nameEN:'Frame'},
+     {shape:'kitap',  colorKey:'kırmızı',        nameTR:'Kitap',    nameEN:'Book'},
+     {shape:'vazo',   colorKey:'sarı',           nameTR:'Vazo',     nameEN:'Vase'},
+     {shape:'heykelcik',colorKey:'kahverengi',   nameTR:'Heykel',   nameEN:'Figurine'},
+     {shape:'yastık', colorKey:'mavi',           nameTR:'Yastık',   nameEN:'Pillow'},
+     {shape:'çiçek',  colorKey:'yeşil',          nameTR:'Çiçek',    nameEN:'Flower'},
+     {shape:'bardak', colorKey:'turuncu',        nameTR:'Bardak',   nameEN:'Cup'},
+     {shape:'top',    colorKey:'pembe',          nameTR:'Top',      nameEN:'Ball'},
+     {shape:'ayıcık', colorKey:'açık mavi',      nameTR:'Ayıcık',   nameEN:'Teddy Bear'},
+     {shape:'kalem',  colorKey:'gri',            nameTR:'Kalem',    nameEN:'Pencil'},
+   ]},
+  {id:74, targetKey:'kırmızı', targetShape:'solucan', roomTR:'Bahçe', roomEN:'Garden',
+   targetShapeNameTR:'Solucan', targetShapeNameEN:'Worm',
+   bgImage: 'L74_SCENE', objImage: 'L74_OBJ',
+   hotspot: {left:30, top:30, width:40, height:40},
+   objects:[
+     {shape:'solucan',colorKey:'koyu kahverengi',nameTR:'Solucan',  nameEN:'Worm'},
+     {shape:'çiçek',  colorKey:'kırmızı',        nameTR:'Çiçek',    nameEN:'Flower'},
+     {shape:'limon',  colorKey:'sarı',           nameTR:'Limon',    nameEN:'Lemon'},
+     {shape:'kelebek',colorKey:'mavi',           nameTR:'Kelebek',  nameEN:'Butterfly'},
+     {shape:'elma',   colorKey:'yeşil',          nameTR:'Elma',     nameEN:'Apple'},
+     {shape:'top',    colorKey:'turuncu',        nameTR:'Top',      nameEN:'Ball'},
+     {shape:'şapka',  colorKey:'mor',            nameTR:'Şapka',    nameEN:'Hat'},
+     {shape:'portakal',colorKey:'pembe',         nameTR:'Portakal', nameEN:'Orange'},
+     {shape:'kova',   colorKey:'açık mavi',      nameTR:'Kova',     nameEN:'Bucket'},
+     {shape:'vazo',   colorKey:'gri',            nameTR:'Vazo',     nameEN:'Vase'},
+   ]},
+  // FINAL 75 — Konser kalabalığı, mavi toka bul
+  {id:75, targetKey:'mavi', targetShape:'toka', roomTR:'Konser Alanı', roomEN:'Concert Hall', adAfter:true,
+   targetShapeNameTR:'Toka', targetShapeNameEN:'Clip',
+   bgImage: 'L75_SCENE', objImage: 'L75_OBJ',
+   hotspot: {left:30, top:30, width:40, height:40},
+   objects:[
+     {shape:'palyaço',    colorKey:'kırmızı',    nameTR:'Kişi',     nameEN:'Person'},
+     {shape:'ayıcık',     colorKey:'turuncu',    nameTR:'Kişi',     nameEN:'Person'},
+     {shape:'robot',      colorKey:'sarı',       nameTR:'Kişi',     nameEN:'Person'},
+     {shape:'heykelcik',  colorKey:'yeşil',      nameTR:'Kişi',     nameEN:'Person'},
+     {shape:'köpük_ördek',colorKey:'mor',        nameTR:'Kişi',     nameEN:'Person'},
+     {shape:'kelebek',    colorKey:'pembe',      nameTR:'Kelebek',  nameEN:'Butterfly'},
+     {shape:'çiçek',      colorKey:'kahverengi', nameTR:'Çiçek',    nameEN:'Flower'},
+     {shape:'solucan',    colorKey:'siyah',      nameTR:'Mikrofon', nameEN:'Mic'},
+     {shape:'kalem',      colorKey:'gri',        nameTR:'Çubuk',    nameEN:'Stick'},
+     {shape:'şapka',      colorKey:'beyaz',      nameTR:'Şapka',    nameEN:'Hat'},
+     {shape:'limon',      colorKey:'sarı',       nameTR:'Işık',     nameEN:'Light'},
+     {shape:'elma',       colorKey:'kırmızı',    nameTR:'Elma',     nameEN:'Apple'},
+     {shape:'top',        colorKey:'mavi',       nameTR:'Toka',     nameEN:'Blue Clip'},
+     {shape:'araba',      colorKey:'turuncu',    nameTR:'Gitar',    nameEN:'Guitar'},
+     {shape:'vazo',       colorKey:'yeşil',      nameTR:'Vazo',     nameEN:'Vase'},
+   ]},
+];
+
+// =====================================================================
+// TÜRKÇE YAZIM — Akıllı ek sistemi
+// =====================================================================
+function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+
+// Türkçe sesli/sessiz uyum ile doğru yükleme eki
+const TR_SUFFIX = {
+  'Tarak':       'ı',   // Tarağı → özel
+  'Tencere':     'yi',
+  'Ayıcık':      'ı',
+  'Top':         'u',
+  'Yastık': 'ı',
+  'Kalem':       'i',
+  'Çorap':       'ı',
+  'Diş Fırçası': 'nı',
+  'Tava':        'yı',
+  'Araba':       'yı',
+  'Sabun':       'u',
+  'Silgi':       'yi',
+  'Kova':        'yı',
+  'Kitap':       'ı',
+  'Elma':        'yı',
+  'Muz':         'u',
+  'Bardak':      'ı',
+  'Çiçek':      'i',
+  'Şapka':       'yı',
+  'Vazo':        'yu',
+  'Robot': 'u',
+  'Gözlük':      'ü',
+  'Çanta':       'yı',
+  'Sulama Kabı': 'nı',
+  'Lego': 'yu',
+  'Portakal': 'ı',
+  'Şampuan': 'ı',
+  'Gül': 'ü',
+  'Saç Tokası': 'nı',
+  'Defter': 'i',
+  'Fincan': 'ı',
+  'Balon': 'u',
+  'Harita': 'yı',
+  'Diş Macunu': 'nu',
+  'Güneş Gözlüğü': 'nü',
+  'Araba': 'yı',
+  'Vazo': 'yu',
+  'Limon': 'u',
+  'Tarçın Kavanozu': 'nu',
+  'Saksı': 'yı',
+  'Havlu': 'yu',
+  'Papatya': 'yı',
+  'Böcek': 'i',
+  'Ayakkabı': 'yı',
+  'Kalem': 'i',
+  'Yastık': 'ı',
+  'Kazak': 'ı',
+  'Kavanoz': 'u',
+  'Klasör': 'ü',
+  'Kuş': 'u',
+  'Saat': 'i',
+  'Robot': 'u',
+  'Paspas': 'ı',
+  'Laptop': 'ı',
+  'Şişe': 'yi',
+  'Bilgisayar': 'ı',
+  'Bıçak': 'ı',
+  'Telefon': 'u',
+  'Taş': 'ı',
+  'Üzüm': 'ü',
+  'Heykel': 'i',
+  'Resim': 'i',
+  'Mont': 'u',
+  'Biber': 'i',
+  'Dosya': 'yı',
+  'Fırça': 'yı',
+  'Şarj': 'ı',
+  'Palyaço': 'yu',
+  'Toka': 'yı',
+  'Solucan': 'ı',
+  'Ördek': 'i',
+  'Kepçe': 'yi',
+  'Çerçeve': 'yi',
+  'Yapboz': 'u',
+};
+
+function trFindCmd(color, obj) {
+  const Color = cap(color);
+  const Obj   = cap(obj);
+  const suf   = TR_SUFFIX[Obj] || 'i';
+  // Türkçe ünsüz yumuşaması: son sessiz k→ğ, p→b önce ek alınca
+  const TR_SOFTEN = {
+    'Tarak':'Tarağ', 'Ayıcık':'Ayıcığ', 'Bardak':'Bardağ',
+    'Çorap':'Çorab', 'Kitap':'Kitab', 'Çiçek':'Çiçeğ',
+    'Bebek':'Bebeğ', 'İpek':'İpeğ', 'Yastık': 'ı',
+    'Gözlük':'Gözlüğ', 'Çoçuk':'Çoçuğ',
+    'Kazak':'Kazağ',
+    'Bıçak':'Bıçağ',
+    'Kelebek':'Kelebeğ',
+  };
+  const base = TR_SOFTEN[Obj] || Obj;
+  return `${Color} ${base}${suf} Bul!`;
+}
+
+// =====================================================================
+// SPEECH — Web Speech API
+// =====================================================================
+function playWrongSound() {
+  try {
+    const ac = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.connect(gain);
+    gain.connect(ac.destination);
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(220, ac.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(80, ac.currentTime + 0.3);
+    gain.gain.setValueAtTime(0.4, ac.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.35);
+    osc.start(ac.currentTime);
+    osc.stop(ac.currentTime + 0.35);
+  } catch(e) {}
+}
+
+function speak(text, opts={}) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.lang  = G.lang === 'tr' ? 'tr-TR' : 'en-US';
+  utt.rate  = opts.rate  ?? 0.9;    // doğal hız
+  utt.pitch = opts.pitch ?? 1.4;    // tiz & neşeli
+  utt.volume= opts.volume?? 1.0;
+  // Türkçe ses varsa onu seç
+  const voices = window.speechSynthesis.getVoices();
+  const match  = voices.find(v => v.lang.startsWith(utt.lang.slice(0,2)));
+  if (match) utt.voice = match;
+  window.speechSynthesis.speak(utt);
+}
+
+// Sesler yüklendikten sonra tekrar dene (bazı tarayıcılarda geç yüklenir)
+window.speechSynthesis.onvoiceschanged = () => {};
+
+// =====================================================================
+// TRANSLATIONS
+// =====================================================================
+const T = {
+  tr: {
+    menuTitle:'Renk Dedektifi',
+    play:'▶ OYNA', levels:'📋 Seviyeler', changeStyle:'🎨 Stil', changeLang:'🌐 Dil',
+    styleTitle:'SANAT TARZINI SEÇ!', styleSub:'Tüm leveller bu tarzla görünecek.',
+    confirm:'SEÇİMİ ONAYLA',
+    progress:(c)=>`Seviye ${c} / 75`,
+    findCmd:(color,obj)=>trFindCmd(color,obj),
+    bravo:'🎉 Bravo!', tryAgain:'😅 Tekrar Dene!',
+    completeTitle:'Harika!', completeSub:'Seviye Tamamlandı!',
+    nextLevel:'Sonraki →', mainMenu:'Ana Menü',
+    levelSelect:'Seviyeler',
+    phases:['🟢 Kolay (1-15)','🟡 Orta (16-35)','🟠 Zor (36-55)','🔴 Uzman (56-75)'],
+    badges:['🟢 Kolay','🟡 Orta','🟠 Zor','🔴 Uzman'],
+    adSec:(s)=>`${s} saniye...`, adReady:'Hazır!', skip:'✕ Atla',
+    room:(r)=>r,
+  },
+  en: {
+    menuTitle:'Color Detective',
+    play:'▶ PLAY', levels:'📋 Levels', changeStyle:'🎨 Style', changeLang:'🌐 Language',
+    styleTitle:'CHOOSE YOUR ART STYLE!', styleSub:'All levels will use the style you select.',
+    confirm:'CONFIRM SELECTION',
+    progress:(c)=>`Level ${c} / 75`,
+    findCmd:(color,obj)=>`Find the ${cap(color)} ${cap(obj)}!`,
+    bravo:'🎉 Bravo!', tryAgain:'😅 Try Again!',
+    completeTitle:'Amazing!', completeSub:'Level Complete!',
+    nextLevel:'Next →', mainMenu:'Main Menu',
+    levelSelect:'Levels',
+    phases:['🟢 Easy (1-15)','🟡 Medium (16-35)','🟠 Hard (36-55)','🔴 Expert (56-75)'],
+    badges:['🟢 Easy','🟡 Medium','🟠 Hard','🔴 Expert'],
+    adSec:(s)=>`${s} seconds...`, adReady:'Ready!', skip:'✕ Skip',
+    room:(r,e)=>e,
+  },
+};
+
+// =====================================================================
+// STATE
+// =====================================================================
+let G = { lang:'tr', style:'cartoon', current:1, completed:new Set(), levelHints:3, active:false };
+const AD_LEVELS = new Set([5,10,15,20,25,30,35,40,45,50,55,60,65,70,75]);
+
+function t(key,...args) {
+  const v = T[G.lang][key];
+  return typeof v==='function' ? v(...args) : (v||key);
+}
+
+// =====================================================================
+// SCREEN
+// =====================================================================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(id==='menuScreen') refreshMenu();
+  if(id==='levelScreen') buildLevels();
+  if(id==='styleScreen') refreshStyle();
+}
+
+// =====================================================================
+// LANGUAGE
+// =====================================================================
+function selectLang(l) { G.lang=l; G.style='cartoon'; refreshMenu(); buildLevels(); showScreen('menuScreen'); }
+
+// =====================================================================
+// STYLE
+// =====================================================================
+function selectStyle(card) {
+  document.querySelectorAll('.style-card').forEach(c=>c.classList.remove('selected'));
+  card.classList.add('selected');
+  G.style = card.dataset.style;
+}
+function confirmStyle() { showScreen('menuScreen'); }
+function refreshStyle() {
+  document.getElementById('sTitleTxt').textContent = t('styleTitle');
+  document.getElementById('sSubTxt').textContent   = t('styleSub');
+  document.getElementById('confirmBtn').textContent = t('confirm');
+}
+
+// =====================================================================
+// MENU
+// =====================================================================
+function refreshMenu() {
+  const _s = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+  _s('menuTitleTxt', t('menuTitle'));
+  _s('playBtn',      t('play'));
+  _s('levelsBtn',    t('levels'));
+  _s('styleBtn',     t('changeStyle'));
+  _s('langBtn',      t('changeLang'));
+  const badges = t('badges');
+  ['easy','mid','hard','exp'].forEach((k,i)=>{
+    document.getElementById('bdg-'+k).textContent=badges[i];
+  });
+  const pct = Math.max(1,((G.current-1)/74)*100);
+  document.getElementById('progBar').style.width = pct+'%';
+  document.getElementById('lvlProgTxt').textContent = t('progress',G.current);
+}
+
+// =====================================================================
+// LEVEL SELECT
+// =====================================================================
+function buildLevels() {
+  document.getElementById('lsTitleTxt').textContent = t('levelSelect');
+  const c = document.getElementById('levelsContainer');
+  c.innerHTML='';
+  const phases=[{r:[1,15]},{r:[16,35]},{r:[36,55]},{r:[56,75]}];
+  const pColors=['#6BCB77','#FFD93D','#FF8C00','#FF6B6B'];
+  t('phases').forEach((ph,pi)=>{
+    const sec=document.createElement('div');sec.className='phase-section';
+    const title=document.createElement('div');title.className='phase-title';
+    title.style.cssText=`background:${pColors[pi]}33;color:${pColors[pi]};border:1px solid ${pColors[pi]}55`;
+    title.textContent=ph; sec.appendChild(title);
+    const grid=document.createElement('div');grid.className='levels-grid';
+    for(let i=phases[pi].r[0];i<=phases[pi].r[1];i++){
+      const d=document.createElement('div');d.className='level-dot';
+      if(AD_LEVELS.has(i)) d.classList.add('ad-dot');
+      if(G.completed.has(i)){d.classList.add('ld-completed');d.textContent='✓';}
+      else if(i===G.current){d.classList.add('ld-current');d.textContent=i;}
+      else if(i<G.current){d.classList.add('ld-unlocked');d.textContent=i;}
+      else{d.classList.add('ld-locked');d.innerHTML='🔒';}
+      if(G.completed.has(i)||i===G.current){
+        d.onclick=()=>{G.current=i;startLevel();};
+      }
+      grid.appendChild(d);
+    }
+    sec.appendChild(grid); c.appendChild(sec);
+  });
+}
+
+// =====================================================================
+// GAME
+// =====================================================================
+let curLvl=null;
+
+function startCurrentLevel() { startLevel(); }
+
+function startLevel() {
+  curLvl = LEVELS.find(l=>l.id===G.current);
+  if(!curLvl) return;
+  G.levelHints = 3;
+  G.active = true;
+
+  showScreen('gameScreen');
+  document.getElementById('sceneWrap').className = 'game-scene-wrap style-'+G.style;
+  document.getElementById('gameLvlBadge').textContent = 'LVL '+curLvl.id;
+  document.getElementById('hintCnt').textContent = G.levelHints;
+
+  const hex = COLOR_HEX[curLvl.targetKey] || '#888';
+  document.getElementById('targetDot').style.background = hex;
+
+  // Build command
+  const tObj = curLvl.objects.find(o=>o.colorKey===curLvl.targetKey);
+  const colorLabel = curLvl.targetKey;
+  // bgImage levellarda targetShapeNameTR'yi direkt kullan, objects'e bakma
+  const objLabel = G.lang==='tr'
+    ? (curLvl.bgImage ? (curLvl.targetShapeNameTR || curLvl.targetShape || 'Nesne') : (tObj ? tObj.nameTR : (curLvl.targetShapeNameTR || curLvl.targetShape || 'Nesne')))
+    : (curLvl.bgImage ? (curLvl.targetShapeNameEN || curLvl.targetShape || 'Object') : (tObj ? tObj.nameEN : (curLvl.targetShapeNameEN || curLvl.targetShape || 'Object')));
+  const cmdText = t('findCmd', colorLabel, objLabel);
+  document.getElementById('gameCmd').textContent = cmdText;
+
+  // Komut sesli okunur — kısa gecikme ile (sahne yüklendikten sonra)
+  setTimeout(() => speak(cmdText), 500);
+
+  buildScene();
+}
+
+function buildScene() {
+  const scene = document.getElementById('gameScene');
+  const sceneWrap = document.getElementById('sceneWrap');
+  scene.innerHTML = '';
+  console.log('buildScene: level='+G.current+' bgImage='+curLvl.bgImage);
+
+  // ── Arka plan görseli olan level ──
+  if (curLvl.bgImage) {
+    const bgUrl = LEVEL_IMAGES[curLvl.bgImage];
+    scene.style.setProperty('--bg-img', `url(${bgUrl})`);
+    scene.style.backgroundImage    = `url(${bgUrl})`;
+    scene.style.backgroundSize     = 'cover';
+    scene.style.backgroundPosition = 'center center';
+    scene.style.backgroundColor    = 'transparent';
+    sceneWrap.classList.add('has-bg');
+
+    // Hotspot: görseldeki gerçek nesneye tıklanabilir bölge
+    if (curLvl.hotspot) {
+      const hs = curLvl.hotspot;
+      const hotDiv = document.createElement('div');
+      hotDiv.className = 'hotspot';
+      hotDiv.style.cssText = `
+      position:absolute;
+      left:${hs.left}%;
+      top:${hs.top}%;
+      width:${hs.width}%;
+      height:${hs.height}%;
+      cursor:pointer;
+      -webkit-tap-highlight-color:transparent;
+      background:rgba(255,255,255,0.001);
+      pointer-events:all;
+      z-index:10;
+    `.replace(/\s+/g,' ').trim();
+      hotDiv.addEventListener('click', () => handleClick(hotDiv, true));
+      hotDiv.dataset.isTarget = '1';
+      scene.appendChild(hotDiv);
+    }
+    // Sahne tıklaması — hotspot dışı = yanlış
+    scene.addEventListener('click', (e) => {
+      if (!G.active) return;
+      const scRect = scene.getBoundingClientRect();
+      const lp = ((e.clientX - scRect.left) / scRect.width * 100).toFixed(1);
+      const tp = ((e.clientY - scRect.top)  / scRect.height * 100).toFixed(1);
+      console.log(`Tıklanan konum → left:${lp}%, top:${tp}%`);
+      // Hotspot dışı tıklama
+      if (!e.target.classList.contains('hotspot')) {
+        // Debug etiketi göster
+        const dbg = document.createElement('div');
+        dbg.style.cssText = `position:absolute;left:${lp}%;top:${tp}%;transform:translate(-50%,-50%);
+          background:rgba(255,0,0,0.8);color:white;font-size:10px;padding:2px 4px;
+          border-radius:3px;pointer-events:none;z-index:999;font-family:monospace;`;
+        dbg.textContent = `${lp}%,${tp}%`;
+        scene.appendChild(dbg);
+        setTimeout(() => dbg.remove(), 2000);
+        handleClick(scene, false);
+      }
+    });
+    return; // SVG nesneleri ekleme
+  }
+
+  // ── Normal level ──
+  sceneWrap.classList.remove('has-bg');
+  scene.style.backgroundImage = '';
+
+  const objs = shuffle([...curLvl.objects]);
+  const count = objs.length;
+  const cols  = count<=4 ? count : count<=6 ? 3 : count<=9 ? 3 : 4;
+  const rows  = Math.ceil(count/cols);
+  const cw    = 100/cols;
+  const ch    = 88/rows;
+
+  objs.forEach((obj,i)=>{
+    const col = i%cols;
+    const row = Math.floor(i/cols);
+    const jx  = (Math.random()-.5)*cw*0.35;
+    const jy  = (Math.random()-.5)*ch*0.3;
+    const x   = cw*col + cw/2 + jx;
+    const y   = 6 + ch*row + ch/2 + jy;
+    const rot = (Math.random()-.5)*12;
+
+    const hex  = COLOR_HEX[obj.colorKey] || '#888';
+    const isT  = obj.colorKey === curLvl.targetKey;
+
+    const drawFn = OBJ_SHAPES[obj.shape] || OBJ_SHAPES.generic;
+    const svgStr = drawFn(hex, 65);
+
+    const wrap = document.createElement('div');
+    wrap.className = 'obj-wrap';
+    wrap.style.cssText = `left:${Math.max(4,Math.min(88,x))}%;top:${Math.max(4,Math.min(88,y))}%;--rot:${rot}deg;transform:rotate(${rot}deg)`;
+    wrap.innerHTML = svgStr;
+    wrap.dataset.isTarget = isT?'1':'0';
+
+    const tag = document.createElement('div');
+    tag.className = 'obj-name-tag';
+    tag.textContent = G.lang==='tr' ? obj.nameTR : obj.nameEN;
+    wrap.appendChild(tag);
+
+    wrap.addEventListener('click',()=>handleClick(wrap,isT));
+    scene.appendChild(wrap);
+  });
+}
+
+function handleClick(wrap, isTarget) {
+  if(!G.active) return;
+  if(isTarget){
+    G.active=false;
+    wrap.classList.add('anim-correct');
+    spawnBloom(wrap);
+    spawnParticles(wrap);
+    showFeedback(t('bravo'),'fb-correct');
+    G.completed.add(G.current);
+    saveState();
+    // Önce showcase göster, sonra level complete
+    showShowcase(wrap);
+  } else {
+    playWrongSound();
+    showFeedback(t('tryAgain'),'fb-wrong');
+    if (wrap.classList.contains('hotspot') || wrap.id === 'gameScene') {
+      wrap.classList.add('anim-wrong');
+      setTimeout(()=>wrap.classList.remove('anim-wrong'),400);
+    }
+  }
+}
+
+// =====================================================================
+// HINT
+// =====================================================================
+function speakCurrentCmd() {
+  const txt = document.getElementById('gameCmd').textContent;
+  if (txt) speak(txt);
+}
+
+function useHint() {
+  if(G.levelHints<=0||!G.active) return;
+  G.levelHints--;
+  document.getElementById('hintCnt').textContent=G.levelHints;
+  document.querySelectorAll('.obj-wrap, .hotspot').forEach(w=>{
+    if(w.dataset.isTarget==='1'){
+      w.classList.add('anim-hint');
+      setTimeout(()=>w.classList.remove('anim-hint'),3200);
+    }
+  });
+}
+
+// =====================================================================
+// PARTICLES
+// =====================================================================
+// Nesnenin gerçek boyutuna tam oturan radial gradient bloom
+function spawnBloom(el) {
+  const r = el.getBoundingClientRect();
+  const cx = r.left + r.width  / 2;
+  const cy = r.top  + r.height / 2;
+  // Nesneyi tam kapsaması için çapı nesnenin köşegenine göre ayarla
+  const size = Math.sqrt(r.width * r.width + r.height * r.height) * 2.2;
+
+  const bloom = document.createElement('div');
+  bloom.className = 'bloom-overlay';
+  bloom.style.cssText = [
+    `width:${size}px`,
+    `height:${size}px`,
+    `left:${cx - size/2}px`,
+    `top:${cy - size/2}px`,
+    `background: radial-gradient(circle,
+       rgba(255,240,80,0.85)  0%,
+       rgba(107,203,119,0.7) 30%,
+       rgba(78,205,196,0.4)  55%,
+       transparent           75%)`,
+  ].join(';');
+
+  document.body.appendChild(bloom);
+  setTimeout(() => bloom.remove(), 900);
+}
+
+function spawnParticles(el) {
+  const r=el.getBoundingClientRect();
+  const cx=r.left+r.width/2, cy=r.top+r.height/2;
+  const colors=['#FFD93D','#FF6B6B','#6BCB77','#4ECDC4','#A855F7','#FF8E53'];
+  for(let i=0;i<14;i++){
+    const p=document.createElement('div'); p.className='particle';
+    const a=(i/14)*Math.PI*2; const d=50+Math.random()*65;
+    p.style.cssText=`left:${cx}px;top:${cy}px;width:${6+Math.random()*7}px;height:${6+Math.random()*7}px;background:${colors[i%colors.length]};--dx:${Math.cos(a)*d}px;--dy:${Math.sin(a)*d}px;animation-duration:${.6+Math.random()*.4}s`;
+    document.body.appendChild(p); setTimeout(()=>p.remove(),1000);
+  }
+}
+
+// =====================================================================
+// FEEDBACK BANNER
+// =====================================================================
+function showShowcase(el) {
+  const overlay = document.getElementById('showcase-overlay');
+  const svgBox  = document.getElementById('showcase-svg');
+
+  // SVG al
+  const origSvg = el.querySelector('svg');
+  if (origSvg) {
+    const clone = origSvg.cloneNode(true);
+    const svgW  = parseFloat(origSvg.getAttribute('width'))  || 80;
+    const svgH  = parseFloat(origSvg.getAttribute('height')) || 80;
+    const aspect = svgW / svgH;
+    const maxSide = Math.min(window.innerWidth * 0.55, window.innerHeight * 0.35);
+    let objW, objH;
+    if (aspect >= 1) { objW = maxSide; objH = objW / aspect; }
+    else             { objH = maxSide; objW = objH * aspect; }
+    clone.setAttribute('width',  objW);
+    clone.setAttribute('height', objH);
+    clone.style.display = 'block';
+
+    // Nesneyi tam kapsayan daire çapı
+    const diam = Math.sqrt(objW*objW + objH*objH) * 1.15;
+
+    const circle = document.createElement('div');
+    circle.style.cssText = [
+      `width:${diam}px`,
+      `height:${diam}px`,
+      `border-radius:50%`,
+      `background:rgba(255,255,255,0.15)`,
+      `display:flex`,
+      `align-items:center`,
+      `justify-content:center`,
+    ].join(';');
+    circle.appendChild(clone);
+    svgBox.innerHTML = '';
+    svgBox.appendChild(circle);
+  } else {
+    // Hotspot level — objImage varsa onu göster, yoksa SVG çiz
+    const diam = Math.min(window.innerWidth * 0.72, window.innerHeight * 0.52);
+
+    const circle = document.createElement('div');
+    circle.style.cssText = [
+      `width:${diam}px`,
+      `height:${diam}px`,
+      `border-radius:50%`,
+      `display:flex`,
+      `align-items:center`,
+      `justify-content:center`,
+      `flex-shrink:0`,
+    ].join(';');
+
+    if (curLvl.objImage && LEVEL_IMAGES[curLvl.objImage]) {
+      // Gerçek nesne görseli — şeffaf PNG, arka plansız, tam sığdır
+      const maxW = Math.min(window.innerWidth * 0.78, 360);
+      const maxH = Math.min(window.innerHeight * 0.50, 420);
+      circle.style.cssText = [
+        'border-radius:0',
+        'background:transparent',
+        `width:${maxW}px`,
+        `height:${maxH}px`,
+        'display:flex',
+        'align-items:center',
+        'justify-content:center',
+        'overflow:hidden',
+      ].join(';');
+      const img = document.createElement('img');
+      img.src = LEVEL_IMAGES[curLvl.objImage];
+      img.style.cssText = `max-width:${maxW}px;max-height:${maxH}px;width:auto;height:auto;object-fit:contain;display:block;`;
+      circle.appendChild(img);
+    } else {
+      // Fallback: SVG çiz
+      const hex    = COLOR_HEX[curLvl.targetKey] || '#888';
+      const drawFn = OBJ_SHAPES[curLvl.targetShape] || OBJ_SHAPES.generic;
+      circle.innerHTML = drawFn(hex, diam * 0.7);
+      circle.style.background = 'rgba(255,255,255,0.15)';
+    }
+
+    svgBox.innerHTML = '';
+    svgBox.appendChild(circle);
+  }
+
+  // Bravo sesli kutlama
+  setTimeout(() => speak(G.lang === 'tr' ? 'Bravo! Harika buldun!' : 'Bravo! Great job!', {rate:0.9, pitch:1.4}), 200);
+
+  overlay.classList.add('active');
+  setTimeout(() => {
+    overlay.classList.remove('active');
+    setTimeout(() => { svgBox.innerHTML = ''; showComplete(); }, 350);
+  }, 2000);
+}
+
+function _scatterStars(starsEl) {
+  starsEl.innerHTML = '';
+  const emojis = ['⭐','🌟','✨','💫','🎊','🎈'];
+  for (let i = 0; i < 10; i++) {
+    const s = document.createElement('div');
+    s.className = 's-star';
+    const angle = (i / 10) * Math.PI * 2;
+    const dist  = 80 + Math.random() * 60;
+    s.style.cssText = [
+      `left:calc(50% - 16px)`,
+      `top:calc(50% - 16px)`,
+      `--sx:${Math.cos(angle)*dist}px`,
+      `--sy:${Math.sin(angle)*dist}px`,
+      `--sr:${Math.random()*360}deg`,
+      `animation-delay:${i*0.06}s`,
+    ].join(';');
+    s.textContent = emojis[i % emojis.length];
+    starsEl.appendChild(s);
+  }
+}
+
+function showFeedback(txt,cls) {
+  const b=document.getElementById('fbBanner');
+  b.textContent=txt; b.className='fb-banner '+cls+' show';
+  setTimeout(()=>b.classList.remove('show'),900);
+}
+
+// =====================================================================
+// LEVEL COMPLETE
+// =====================================================================
+function showComplete() {
+  document.getElementById('lcTitle').textContent = t('completeTitle');
+  document.getElementById('lcSub').textContent   = t('completeSub');
+  document.getElementById('nextBtn').textContent  = t('nextLevel');
+  document.getElementById('menuFromLc').textContent= t('mainMenu');
+  const emojis=['🎉','🌟','🏆','🎊','✨','🎈'];
+  document.getElementById('lcEmoji').textContent=emojis[Math.floor(Math.random()*emojis.length)];
+  ['st1','st2','st3'].forEach((id,i)=>{
+    const s=document.getElementById(id); s.classList.remove('earned');
+    setTimeout(()=>s.classList.add('earned'),i*200+100);
+  });
+  document.getElementById('lcOverlay').classList.add('show');
+}
+
+function nextLevel() {
+  document.getElementById('lcOverlay').classList.remove('show');
+  const showAd = AD_LEVELS.has(G.current);
+  if(G.current<75) G.current++;
+  if(showAd) runAd(()=>startLevel());
+  else startLevel();
+}
+
+function goMenu() {
+  document.getElementById('lcOverlay').classList.remove('show');
+  showScreen('menuScreen');
+}
+
+// =====================================================================
+// AD
+// =====================================================================
+function runAd(cb) {
+  const ov=document.getElementById('adOverlay');
+  const cd=document.getElementById('adCd');
+  const sk=document.getElementById('adSkip');
+  ov.classList.add('show'); sk.classList.remove('vis');
+  let s=5;
+  cd.textContent=t('adSec',s);
+  const tmr=setInterval(()=>{
+    s--;
+    if(s<=0){ clearInterval(tmr); cd.textContent=t('adReady'); sk.textContent=t('skip'); sk.classList.add('vis');
+      sk.onclick=()=>{ ov.classList.remove('show'); if(cb)cb(); };
+    } else cd.textContent=t('adSec',s);
+  },1000);
+}
+
+// =====================================================================
+// UTILS
+// =====================================================================
+function shuffle(arr) {
+  for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}
+  return arr;
+}
+
+function saveState() {
+  try{ localStorage.setItem('rd2',JSON.stringify({cur:G.current,comp:[...G.completed],style:G.style})); }catch(e){}
+}
+function loadState() {
+  try{
+    const s=JSON.parse(localStorage.getItem('rd2')||'{}');
+    // Her zaman level 1'den başla
+    G.current = s.cur || 1;
+    if(s.comp) G.completed=new Set(s.comp);
+    if(s.style) G.style=s.style;
+  }catch(e){}
+}
+
+loadState();
+setInterval(saveState,8000);
+</script>
+</body>
+</html>
